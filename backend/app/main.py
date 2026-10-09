@@ -26,7 +26,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS - permite requisições do frontend na Vercel
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,11 +39,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     """Inicializa banco de dados"""
-    try:
-        await init_db()
-        print("[ROOTX] Banco de dados inicializado")
-    except Exception as e:
-        print(f"[ROOTX] Erro ao inicializar banco: {e}")
+    await init_db()
 
 
 @app.get("/api/health")
@@ -52,30 +48,26 @@ async def health():
     return {"status": "ok", "service": "ROOTX", "version": "1.0.0"}
 
 
-@app.post("/api/scan", response_model=ScanResponse)
+@app.post("/api/scan")
 async def create_scan_endpoint(request: ScanRequest):
-    """
-    Inicia um novo scan de segurança
-    """
+    """Inicia um novo scan de segurança"""
     scan_id = str(uuid.uuid4())[:8]
     await create_scan(scan_id, str(request.url), request.scan_type.value)
 
     time_map = {"quick": 30, "full": 180, "aggressive": 600}
     estimated_time = time_map.get(request.scan_type.value, 60)
 
-    return ScanResponse(
-        scan_id=scan_id,
-        status=ScanStatus.PENDING,
-        message=f"Scan iniciado. ID: {scan_id}",
-        estimated_time_seconds=estimated_time
-    )
+    return {
+        "scan_id": scan_id,
+        "status": "pending",
+        "message": f"Scan iniciado. ID: {scan_id}",
+        "estimated_time_seconds": estimated_time
+    }
 
 
 @app.get("/api/scan/{scan_id}")
 async def get_scan_status(scan_id: str):
-    """
-    Verifica status de um scan
-    """
+    """Verifica status de um scan"""
     scan = await get_scan(scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan não encontrado")
@@ -94,9 +86,7 @@ async def get_scan_status(scan_id: str):
 
 @app.post("/api/scan/{scan_id}/run")
 async def run_scan(scan_id: str, background_tasks: BackgroundTasks):
-    """
-    Executa o scan
-    """
+    """Executa o scan"""
     scan = await get_scan(scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan não encontrado")
@@ -111,9 +101,7 @@ async def run_scan(scan_id: str, background_tasks: BackgroundTasks):
 
 
 async def execute_scan(scan_id: str, url: str, scan_type: str):
-    """
-    Executa o scan completo
-    """
+    """Executa o scan completo"""
     print(f"[ROOTX] Iniciando scan {scan_id} para {url}")
 
     try:
@@ -138,15 +126,13 @@ async def execute_scan(scan_id: str, url: str, scan_type: str):
 
     except Exception as e:
         print(f"[ROOTX] Erro no scan {scan_id}: {e}")
-        print(f"[ROOTX] Traceback: {traceback.format_exc()}")
+        traceback.print_exc()
         await update_scan_status(scan_id, ScanStatus.FAILED)
 
 
 @app.get("/api/scan/{scan_id}/report")
 async def get_scan_report(scan_id: str):
-    """
-    Retorna relatório do scan
-    """
+    """Retorna relatório do scan"""
     scan = await get_scan(scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan não encontrado")
@@ -163,15 +149,21 @@ async def get_scan_report(scan_id: str):
     summary = json.loads(scan["summary_json"]) if scan["summary_json"] else {}
     summary["timestamp"] = scan["completed_at"]
 
-    return generate_json_report(
-        scan["url"],
-        scan["score"],
-        findings,
-        summary,
-        technologies,
-        security_headers,
-        scan["duration_seconds"] or 0
-    )
+    return {
+        "report_url": scan["url"],
+        "score": scan["score"],
+        "classification": summary.get("classification"),
+        "duration_seconds": scan["duration_seconds"] or 0,
+        "summary": {
+            "total_findings": len(findings),
+            "severity_counts": summary.get("severity_counts", {}),
+            "risk_level": summary.get("risk_level", "unknown")
+        },
+        "technologies": technologies,
+        "security_headers": security_headers,
+        "findings": findings,
+        "recommendations": []
+    }
 
 
 @app.get("/api/scans")
@@ -179,6 +171,33 @@ async def list_scans():
     """Lista todos os scans"""
     scans = await get_all_scans()
     return {"scans": scans, "total": len(scans)}
+
+
+@app.get("/api/debug")
+async def debug():
+    """Endpoint de debug"""
+    try:
+        # Tenta importar scanner
+        from .scanner import SecurityScanner
+
+        # Tenta criar scanner
+        scanner = SecurityScanner()
+
+        # Tenta fazer um scan simples
+        async with scanner.client:
+            response = await scanner.client.get("https://httpbin.org/html")
+
+        return {
+            "status": "ok",
+            "scanner": "funcionando",
+            "response_status": response.status_code
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 
 @app.get("/")
