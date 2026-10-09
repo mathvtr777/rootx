@@ -4,6 +4,7 @@ ROOTX - API Principal
 import asyncio
 import uuid
 import json
+import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -29,25 +30,21 @@ app = FastAPI(
 # CORS - permite requisições do frontend na Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://rootx-*.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "https://rootx-production-1509.up.railway.app"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Estado
-scanner_tasks = {}
-
 
 @app.on_event("startup")
 async def startup():
     """Inicializa banco de dados"""
-    await init_db()
+    try:
+        await init_db()
+        print("[ROOTX] Banco de dados inicializado")
+    except Exception as e:
+        print(f"[ROOTX] Erro ao inicializar banco: {e}")
 
 
 @app.get("/api/health")
@@ -61,18 +58,10 @@ async def create_scan_endpoint(request: ScanRequest):
     """
     Inicia um novo scan de segurança
     """
-    # Gerar ID único
     scan_id = str(uuid.uuid4())[:8]
-
-    # Criar registro no banco
     await create_scan(scan_id, str(request.url), request.scan_type.value)
 
-    # Estimar tempo baseado no tipo
-    time_map = {
-        "quick": 30,
-        "full": 180,
-        "aggressive": 600
-    }
+    time_map = {"quick": 30, "full": 180, "aggressive": 600}
     estimated_time = time_map.get(request.scan_type.value, 60)
 
     return ScanResponse(
@@ -92,14 +81,8 @@ async def get_scan_status(scan_id: str):
     if not scan:
         raise HTTPException(status_code=404, detail="Scan não encontrado")
 
-    # Calcular progresso
     status = scan["status"]
-    if status == "pending":
-        progress = 0
-    elif status == "running":
-        progress = 50
-    else:
-        progress = 100
+    progress = 0 if status == "pending" else (50 if status == "running" else 100)
 
     return {
         "scan_id": scan_id,
@@ -113,7 +96,7 @@ async def get_scan_status(scan_id: str):
 @app.post("/api/scan/{scan_id}/run")
 async def run_scan(scan_id: str, background_tasks: BackgroundTasks):
     """
-    Executa o scan (endpoint separado para evitar timeout)
+    Executa o scan
     """
     scan = await get_scan(scan_id)
     if not scan:
@@ -122,10 +105,7 @@ async def run_scan(scan_id: str, background_tasks: BackgroundTasks):
     if scan["status"] not in ["pending", "failed"]:
         return {"message": "Scan já executado", "status": scan["status"]}
 
-    # Atualizar status
     await update_scan_status(scan_id, ScanStatus.RUNNING)
-
-    # Executar scan em background
     background_tasks.add_task(execute_scan, scan_id, scan["url"], scan["scan_type"])
 
     return {"message": "Scan em execução", "status": "running"}
@@ -135,34 +115,36 @@ async def execute_scan(scan_id: str, url: str, scan_type: str):
     """
     Executa o scan completo
     """
+    print(f"[ROOTX] Iniciando scan {scan_id} para {url}")
+
     try:
         scanner = SecurityScanner()
+        print(f"[ROOTX] Scanner criado")
 
-        # Mapear tipo de scan
         from .models import ScanType
         scan_type_enum = ScanType(scan_type)
+        print(f"[ROOTX] Tipo de scan: {scan_type_enum}")
 
-        # Executar scan
         result = await scanner.scan(url, scan_type_enum)
+        print(f"[ROOTX] Scan concluído, achados: {len(result.findings)}")
+
         await scanner.close()
 
-        # Atualizar result com ID e status
         result.scan_id = scan_id
         result.status = ScanStatus.COMPLETED
         result.completed_at = datetime.utcnow()
 
-        # Salvar resultados
         await save_scan_results(scan_id, result)
-
         print(f"[ROOTX] Scan {scan_id} completo - Score: {result.score}")
 
     except Exception as e:
         print(f"[ROOTX] Erro no scan {scan_id}: {e}")
+        print(f"[ROOTX] Traceback: {traceback.format_exc()}")
         await update_scan_status(scan_id, ScanStatus.FAILED)
 
 
 @app.get("/api/scan/{scan_id}/report")
-async def get_scan_report(scan_id: str, format: str = "json"):
+async def get_scan_report(scan_id: str):
     """
     Retorna relatório do scan
     """
@@ -176,12 +158,10 @@ async def get_scan_report(scan_id: str, format: str = "json"):
             detail=f"Scan ainda não completo. Status: {scan['status']}"
         )
 
-    # Reconstruir objetos
     findings = json.loads(scan["findings_json"]) if scan["findings_json"] else []
     technologies = json.loads(scan["technologies_json"]) if scan["technologies_json"] else []
     security_headers = json.loads(scan["security_headers_json"]) if scan["security_headers_json"] else {}
     summary = json.loads(scan["summary_json"]) if scan["summary_json"] else {}
-
     summary["timestamp"] = scan["completed_at"]
 
     return generate_json_report(
@@ -197,9 +177,7 @@ async def get_scan_report(scan_id: str, format: str = "json"):
 
 @app.get("/api/scans")
 async def list_scans():
-    """
-    Lista todos os scans
-    """
+    """Lista todos os scans"""
     scans = await get_all_scans()
     return {"scans": scans, "total": len(scans)}
 
