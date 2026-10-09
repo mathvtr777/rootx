@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/scan", "destination": "/scan.html" },
+    { "source": "/report/:id", "destination": "/report.html" }
+  ]
+}
