@@ -8,19 +8,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from .models import ScanRequest, ScanResponse, ScanStatus, ScanResult, Finding
 from .database import init_db, create_scan, update_scan_status, save_scan_results, get_scan, get_all_scans
 from .scanner import SecurityScanner
-from .analyzer import generate_markdown_report, generate_json_report
+from .analyzer import generate_json_report
 
 # Configuração
-BASE_DIR = Path(__file__).parent.parent.parent
-BACKEND_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent.parent
 
 app = FastAPI(
     title="ROOTX API",
@@ -28,10 +26,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
+# CORS - permite requisições do frontend na Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://rootx-*.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://rootx-production-1509.up.railway.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -181,19 +184,6 @@ async def get_scan_report(scan_id: str, format: str = "json"):
 
     summary["timestamp"] = scan["completed_at"]
 
-    if format == "markdown":
-        duration = scan["duration_seconds"] or 0
-        report = generate_markdown_report(
-            scan["url"],
-            scan["score"],
-            findings,
-            summary,
-            technologies,
-            security_headers,
-            duration
-        )
-        return HTMLResponse(content=report)
-
     return generate_json_report(
         scan["url"],
         scan["score"],
@@ -214,31 +204,10 @@ async def list_scans():
     return {"scans": scans, "total": len(scans)}
 
 
-# === FRONTEND ===
-
 @app.get("/")
 async def root():
-    """Página principal"""
-    return FileResponse(str(BASE_DIR / "frontend" / "index.html"))
-
-
-@app.get("/scan")
-async def scan_page():
-    """Página de scan"""
-    return FileResponse(str(BASE_DIR / "frontend" / "scan.html"))
-
-
-@app.get("/report/{scan_id}")
-async def report_page(scan_id: str):
-    """Página de relatório"""
-    return FileResponse(str(BASE_DIR / "frontend" / "report.html"))
-
-
-# === STATIC FILES ===
-# Servir arquivos estáticos seexistirem
-static_dir = BASE_DIR / "frontend"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    """Health check na raiz"""
+    return {"message": "ROOTX API", "version": "1.0.0", "docs": "/docs"}
 
 
 if __name__ == "__main__":
