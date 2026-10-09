@@ -10,30 +10,10 @@ from .models import (
     Finding, Technology, SecurityHeaders, Severity,
     ScanResult, ScanType
 )
-from . import nuclei
 
 
 class SecurityScanner:
     """Motor de scan de segurança"""
-
-    # Headers de segurança importantes
-    SECURITY_HEADERS = {
-        "x-frame-options": ["DENY", "SAMEORIGIN"],
-        "x-content-type-options": ["nosniff"],
-        "strict-transport-security": None,  # só verifica se existe
-        "content-security-policy": None,
-        "x-xss-protection": None,
-        "referrer-policy": None,
-        "permissions-policy": None,
-    }
-
-    # Headers que revelam tecnologia
-    TECH_HEADERS = {
-        "server": None,
-        "x-powered-by": None,
-        "x-aspnet-version": None,
-        "x-aspnetmvc-version": None,
-    }
 
     # Padrões para detectar tecnologias
     TECH_PATTERNS = [
@@ -64,10 +44,8 @@ class SecurityScanner:
     SECRET_PATTERNS = [
         (r"(?i)api[_-]?key\s*[=:]\s*['\"]?[\w\-]{20,}", "API Key exposta"),
         (r"(?i)secret[_-]?key\s*[=:]\s*['\"]?[\w\-]{20,}", "Secret Key exposta"),
-        (r"(?i)password\s*[=:]\s*['\"]?[^\s'\"]{8,}", "Password hardcoded"),
         (r"sk-[a-zA-Z0-9]{20,}", "Chave secreta (Stripe/OpenAI/etc)"),
         (r"AKIA[0-9A-Z]{16}", "AWS Access Key"),
-        (r"(?i)bearer\s+[a-zA-Z0-9\-._~+/]+=*", "Bearer Token"),
         (r"-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----", "Chave privada exposta"),
     ]
 
@@ -88,13 +66,6 @@ class SecurityScanner:
     async def scan(self, url: str, scan_type: ScanType = ScanType.QUICK) -> ScanResult:
         """
         Executa scan completo
-
-        Args:
-            url: URL para escanear
-            scan_type: Tipo de scan
-
-        Returns:
-            ScanResult com todos os achados
         """
         start_time = datetime.utcnow()
         findings: List[Finding] = []
@@ -120,33 +91,22 @@ class SecurityScanner:
             # 5. Verificar páginas comuns
             findings.extend(await self._check_common_issues(final_url))
 
-            # 6. Rodar Nuclei (se instalado)
-            if nuclei.check_nuclei_installed():
-                timeout_map = {
-                    ScanType.QUICK: 60,
-                    ScanType.FULL: 180,
-                    ScanType.AGGRESSIVE: 600
-                }
-                nuclei_findings = nuclei.run_nuclei_scan(
-                    final_url,
-                    scan_type.value,
-                    timeout_map.get(scan_type, 60)
-                )
-                for nf in nuclei_findings:
-                    findings.append(Finding(
-                        name=nf["name"],
-                        severity=Severity(nf["severity"]),
-                        description=nf["description"],
-                        location=nf["location"],
-                        recommendation=nf["recommendation"],
-                        cve_id=nf.get("cve_id"),
-                        cvss=nf.get("cvss")
-                    ))
-
         except httpx.TimeoutException:
-            pass
+            findings.append(Finding(
+                name="Timeout na conexão",
+                severity=Severity.MEDIUM,
+                description=f"Não foi possível completar a requisição em {self.timeout} segundos.",
+                location=url,
+                recommendation="Verifique se o site está acessível."
+            ))
         except Exception as e:
-            print(f"Erro no scan: {e}")
+            findings.append(Finding(
+                name="Erro no scan",
+                severity=Severity.MEDIUM,
+                description=f"Erro ao escanear: {str(e)}",
+                location=url,
+                recommendation="Verifique se a URL está correta e o site está acessível."
+            ))
 
         # Calcular score
         score = self._calculate_score(findings)
@@ -156,9 +116,9 @@ class SecurityScanner:
         duration = (end_time - start_time).total_seconds()
 
         return ScanResult(
-            scan_id="",  # Será preenchido depois
+            scan_id="",
             url=url,
-            status=ScanResult.model_fields["status"].default,
+            status="completed",
             started_at=start_time,
             completed_at=end_time,
             duration_seconds=duration,
@@ -228,20 +188,15 @@ class SecurityScanner:
         technologies = []
         detected = set()
 
-        # Checar headers
-        for header_name, tech_name in self.TECH_HEADERS.items():
-            if header_name in headers:
-                value = headers[header_name]
-                # Extrair versão se possível
-                version_match = re.search(r"[\d]+\.[\d]+(?:\.[\d]+)?", value)
-                version = version_match.group(0) if version_match else None
-                tech = Technology(
-                    name=value.split("/")[0] if "/" in value else value,
-                    version=version,
-                    confidence="high"
-                )
-                if tech.name.lower() not in [t.name.lower() for t in technologies]:
-                    technologies.append(tech)
+        # Checar headers de servidor
+        if "server" in headers:
+            server = headers["server"]
+            technologies.append(Technology(name=server, confidence="medium"))
+
+        if "x-powered-by" in headers:
+            tech = Technology(name=headers["x-powered-by"], confidence="high")
+            if tech.name not in [t.name for t in technologies]:
+                technologies.append(tech)
 
         # Checar padrões no HTML
         for pattern, tech_name in self.TECH_PATTERNS:
@@ -258,6 +213,11 @@ class SecurityScanner:
         for pattern, description in self.SECRET_PATTERNS:
             matches = re.finditer(pattern, html, re.IGNORECASE)
             for match in matches:
+                # Não reportar falsos positivos comuns
+                matched = match.group(0)
+                if "example" in matched.lower() or "your_" in matched.lower():
+                    continue
+
                 findings.append(Finding(
                     name=f"Secret Exposto: {description}",
                     severity=Severity.CRITICAL,
@@ -282,38 +242,25 @@ class SecurityScanner:
             ("/admin/login", "Login Admin Exposto"),
             ("/.env", "Arquivo .env Acessível"),
             ("/config.php", "Arquivo de Configuração Exposto"),
-            ("/api/", "API Exposta"),
             ("/debug", "Modo Debug Ativado"),
             ("/swagger", "Swagger UI Exposto"),
-            ("/swagger-ui", "Swagger UI Exposto"),
         ]
 
-        tasks = []
         for path, name in common_paths:
-            tasks.append(self._check_path(f"{base_url}{path}", name))
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        for result in results:
-            if result:
-                findings.append(result)
+            try:
+                resp = await self.client.get(f"{base_url}{path}", timeout=5)
+                if resp.status_code == 200:
+                    findings.append(Finding(
+                        name=name,
+                        severity=Severity.HIGH,
+                        description=f"{name} encontrado em {base_url}{path}.",
+                        location=f"{base_url}{path}",
+                        recommendation="Restrinja o acesso a esta URL ou remova se não necessário."
+                    ))
+            except:
+                pass
 
         return findings
-
-    async def _check_path(self, url: str, name: str) -> Optional[Finding]:
-        """Verifica se um path existe e está acessível"""
-        try:
-            response = await self.client.get(url, timeout=5)
-            if response.status_code == 200:
-                return Finding(
-                    name=name,
-                    severity=Severity.HIGH,
-                    description=f"{name} encontrado em {url}.Isso pode ser explorado por atacantes.",
-                    location=url,
-                    recommendation="Restrinja o acesso a esta URL ou remova se não necessário."
-                )
-        except:
-            pass
-        return None
 
     def _calculate_score(self, findings: List[Finding]) -> int:
         """Calcula score de segurança (0-100)"""
@@ -329,24 +276,15 @@ class SecurityScanner:
         }
 
         total_deduction = sum(deductions.get(f.severity, 1) for f in findings)
-        score = max(0, 100 - total_deduction)
-
-        return score
+        return max(0, 100 - total_deduction)
 
     def _generate_summary(self, findings: List[Finding], score: int) -> dict:
         """Gera sumário do scan"""
-        severity_counts = {
-            "critical": 0,
-            "high": 0,
-            "medium": 0,
-            "low": 0,
-            "info": 0,
-        }
+        severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
 
         for f in findings:
             severity_counts[f.severity.value] += 1
 
-        # Classificação baseada no score
         if score >= 90:
             classification = "Excelente"
         elif score >= 70:

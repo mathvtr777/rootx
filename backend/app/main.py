@@ -16,7 +16,6 @@ from fastapi.responses import JSONResponse
 from .models import ScanRequest, ScanResponse, ScanStatus, ScanResult, Finding
 from .database import init_db, create_scan, update_scan_status, save_scan_results, get_scan, get_all_scans
 from .scanner import SecurityScanner
-from .analyzer import generate_json_report
 
 # Configuração
 BASE_DIR = Path(__file__).parent.parent
