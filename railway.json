@@ -1,0 +1,12 @@
+{
+  "name": "rootx-backend",
+  "version": 2,
+  "build": {
+    "command": "pip install -r requirements.txt",
+    "builder": "python"
+  },
+  "run": {
+    "command": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "port": 8000
+  }
+}
