@@ -1,7 +1,7 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "command": "pip install -r requirements.txt"
+    "command": "apt-get update && apt-get install -y curl unzip && curl -sL https://github.com/projectdiscovery/nuclei/releases/latest/download/nuclei_linux_amd64.zip -o nuclei.zip && unzip nuclei.zip && mv nuclei /usr/local/bin/ && chmod +x /usr/local/bin/nuclei && rm nuclei.zip && pip install -r requirements.txt"
   },
   "deploy": {
     "command": "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
