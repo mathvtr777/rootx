@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: rootx-api
+    region: us-east
+    runtime: python311
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        value: rootx.db
+      - key: NUCLEI_PATH
+        value: nuclei
+      - key: PYTHON_VERSION
+        value: "3.11"
+    # Auto-sleep após 15min de inatividade (free tier)
+    autoSleep: 15
+
+# Para Workers (futuro) - fila de scans
+#   - type: worker
+#     name: rootx-worker
+#     region: us-east
+#     runtime: python311
+#     buildCommand: pip install -r requirements.txt
+#     startCommand: python -m app.worker
