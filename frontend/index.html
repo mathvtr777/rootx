@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nightfall - Scanner de Segurança</title>
+    <title>Scanner de Segurança</title>
+    <link rel="icon" type="image/png" href="/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -51,12 +52,9 @@
     <!-- Navbar -->
     <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-lg border-b border-gray-900">
         <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z"/>
-                </svg>
-                <span class="text-xl font-bold">Nightfall</span>
-            </div>
+            <a href="/" class="flex items-center">
+                <img src="/logo.png" alt="Logo" class="h-9 w-auto">
+            </a>
             <div class="flex items-center gap-6 text-sm">
                 <a href="#features" class="text-gray-400 hover:text-white">Recursos</a>
                 <a href="#modes" class="text-gray-400 hover:text-white">Modos</a>
@@ -225,7 +223,7 @@
 
     <!-- Footer -->
     <footer class="border-t border-gray-900 py-8 px-6 text-center text-sm text-gray-500">
-        <p>Nightfall — Segurança ofensiva automatizada. Use apenas em sistemas que você possui.</p>
+        <p>Segurança ofensiva automatizada. Use apenas em sistemas que você possui.</p>
     </footer>
 </body>
 </html>

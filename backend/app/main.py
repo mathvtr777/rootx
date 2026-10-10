@@ -259,7 +259,7 @@ async def get_scan_pdf(scan_id: str):
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="nightfall-{scan_id}.pdf"'
+            "Content-Disposition": f'attachment; filename="scan-{scan_id}.pdf"'
         }
     )
 

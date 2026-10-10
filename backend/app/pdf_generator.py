@@ -15,7 +15,7 @@ from reportlab.platypus import (
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
 
-# Cores Nightfall
+# Cores do tema
 RED = colors.HexColor("#ef4444")
 DARK = colors.HexColor("#1a1a1a")
 GRAY = colors.HexColor("#666666")
@@ -93,7 +93,7 @@ def _build_header(scan, styles):
     elements = []
     # Logo + título
     header_data = [[
-        Paragraph('<font color="#ef4444" size="20"><b>▼ NIGHTFALL</b></font>', styles["NF_Body"]),
+        Paragraph('<font color="#ef4444" size="16"><b>▼ SECURITY SCAN</b></font>', styles["NF_Body"]),
         Paragraph(
             f'<font size="9" color="#666">'
             f'Scan ID: <b>{scan.get("scan_id", "?")}</b><br/>'
@@ -330,7 +330,7 @@ def _build_findings(findings, styles):
 
 def _build_footer():
     return Paragraph(
-        "Nightfall Scanner • Use apenas em sistemas que você possui autorização para testar",
+        "Security Scanner • Use apenas em sistemas que você possui autorização para testar",
         _styles()["NF_Footer"]
     )
 
@@ -342,8 +342,8 @@ def generate_pdf(scan: dict) -> bytes:
         buffer, pagesize=A4,
         leftMargin=2 * cm, rightMargin=2 * cm,
         topMargin=2 * cm, bottomMargin=2 * cm,
-        title=f"Nightfall Report - {scan.get('scan_id', '?')}",
-        author="Nightfall Security Scanner",
+        title=f"Security Report - {scan.get('scan_id', '?')}",
+        author="Security Scanner",
     )
 
     summary = scan.get("summary", {}) or {}
