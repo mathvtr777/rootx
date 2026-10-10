@@ -6,10 +6,14 @@
 
 ## Funcionalidades
 
-- 🔍 Scan de vulnerabilidades automatizado
+- 🔍 **3 Modos de Scan** - Quick (30s), Full (3min), Aggressive (10min)
 - 🔒 Análise de headers de segurança
 - 🕵️ Detecção de secrets expostos
-- 📦 Identificação de dependências vulnerables
+- 📦 Identificação de dependências vulnerables (Retire.js)
+- 🛡️ Scanner de vulnerabilidades (Nuclei)
+- 🌐 Enumeração de subdomínios e diretórios
+- 🔐 Análise SSL/TLS completa
+- 🚀 Detecção de WAF e firewall
 - 📊 Relatório com score de segurança (0-100)
 - 🤖 Recomendações powered by AI
 
@@ -65,6 +69,12 @@ Inicia um novo scan
   "scan_type": "quick|full|aggressive"
 }
 ```
+
+| Modo | Tempo | Descrição |
+|------|-------|-----------|
+| `quick` | ~30s | Scan essencial - headers, tecnologias, secrets |
+| `full` | ~3min | + Nuclei, Retire.js, crawling, subdomínios |
+| `aggressive` | ~10min | + Enumeração, portas, WAF detection |
 
 ### GET /api/scan/{scan_id}
 Verifica status do scan
