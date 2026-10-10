@@ -67,7 +67,7 @@
             </a>
             <div class="flex items-center gap-6">
                 <a href="#features" class="text-gray-400 hover:text-white transition">Features</a>
-                <a href="#pricing" class="text-gray-400 hover:text-white transition">Preços</a>
+                <a href="#pricing" class="text-gray-400 hover:text-white transition">Modos</a>
                 <a href="/scan" class="bg-emerald-500 hover:bg-emerald-600 text-black font-semibold px-5 py-2 rounded-lg transition">
                     Escanear Agora
                 </a>
@@ -89,8 +89,8 @@
             </h1>
 
             <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-                ROOTX escaneia seu site e detecta vulnerabilidades críticas: API keys expostas,
-                headers faltando, bibliotecas desatualizadas e mais. Sem complicação.
+                ROOTX escaneia seu site e detecta vulnerabilidades críticas com testes ativos:
+                SQLi, XSS, RCE, LFI, SSTI e mais. Sem complicação, resultados reais.
             </p>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -112,17 +112,23 @@
                     <div class="w-3 h-3 rounded-full bg-red-500"></div>
                     <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
                     <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span class="ml-4 text-gray-500 text-sm">rootx ~ scan</span>
+                    <span class="ml-4 text-gray-500 text-sm">rootx ~ aggressive scan</span>
                 </div>
                 <div class="mono text-sm space-y-1">
-                    <p class="text-gray-500">$ rootx scan https://seu-site.com</p>
-                    <p class="text-emerald-400">[+] Iniciando scan...</p>
-                    <p class="text-gray-400">[•] Verificando headers de segurança...</p>
-                    <p class="text-gray-400">[•] Analisando tecnologias...</p>
-                    <p class="text-gray-400">[•] Procurando vulnerabilidades...</p>
-                    <p class="text-red-400 scan-line">[!] ALERTA: API Key exposta no código</p>
+                    <p class="text-gray-500">$ rootx scan https://seu-site.com --mode aggressive</p>
+                    <p class="text-emerald-400">[+] Modo AGGRESSIVE ativado</p>
+                    <p class="text-gray-400">[•] Verificando SSL/TLS...</p>
+                    <p class="text-gray-400">[•] Analisando headers...</p>
+                    <p class="text-gray-400">[•] Testando SQL Injection...</p>
+                    <p class="text-gray-400">[•] Testando XSS refletido...</p>
+                    <p class="text-gray-400">[•] Enumerando subdomínios...</p>
+                    <p class="text-gray-400">[•] Verificando credenciais vazadas...</p>
+                    <p class="text-red-400 scan-line">[!] CRÍTICO: SQL Injection detectado em /search?q=</p>
+                    <p class="text-red-400 scan-line">[!] CRÍTICO: XSS Refletido em /api/user?name=</p>
+                    <p class="text-red-400 scan-line">[!] CRÍTICO: .env exposto publicamente</p>
+                    <p class="text-yellow-400 scan-line">[!] ALERTA: LFI possível em /download?file=</p>
                     <p class="text-yellow-400 scan-line">[!] ALERTA: X-Frame-Options faltando</p>
-                    <p class="text-emerald-400">[+] Scan completo! Score: 72/100</p>
+                    <p class="text-emerald-400">[+] Scan completo! Score: 45/100</p>
                     <p class="text-gray-500">$ <span class="blink">_</span></p>
                 </div>
             </div>
@@ -138,70 +144,255 @@
             </div>
 
             <div class="grid md:grid-cols-3 gap-6">
-                <!-- Card 1 -->
+                <!-- Card 1 - SQLi -->
                 <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
                     <div class="w-14 h-14 bg-red-500/20 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Secrets Expostos</h3>
-                    <p class="text-gray-400">Detectamos API keys, tokens, senhas hardcoded e chaves privadas expostas no código fonte.</p>
+                    <h3 class="text-xl font-bold mb-2">SQL Injection</h3>
+                    <p class="text-gray-400">Testes ativos de SQLi boolean, union, time-based e error-based. Confirmação com evidência real.</p>
                 </div>
 
-                <!-- Card 2 -->
+                <!-- Card 2 - XSS -->
                 <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
-                    <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-7 h-7 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    <div class="w-14 h-14 bg-orange-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Headers de Segurança</h3>
-                    <p class="text-gray-400">Verificamos X-Frame-Options, CSP, HSTS, CORS e outros headers críticos ausentes.</p>
+                    <h3 class="text-xl font-bold mb-2">XSS Refletido</h3>
+                    <p class="text-gray-400">Detecta scripts maliciosos refletidos em parâmetros. Testa múltiplos vetores de ataque.</p>
                 </div>
 
-                <!-- Card 3 -->
+                <!-- Card 3 - RCE -->
                 <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
                     <div class="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Dependências</h3>
-                    <p class="text-gray-400">Identificamos bibliotecas JS e deps com vulnerabilidades conhecidas (CVE).</p>
+                    <h3 class="text-xl font-bold mb-2">RCE / Command Injection</h3>
+                    <p class="text-gray-400">Verifica injeção de comandos no sistema. Detecta eval(), system() e exec() vulneráveis.</p>
                 </div>
 
-                <!-- Card 4 -->
+                <!-- Card 4 - LFI -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-yellow-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">LFI / Path Traversal</h3>
+                    <p class="text-gray-400">Detecta leitura não autorizada de arquivos do sistema via path traversal.</p>
+                </div>
+
+                <!-- Card 5 - SSTI -->
                 <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
                     <div class="w-14 h-14 bg-cyan-500/20 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-7 h-7 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Tecnologias</h3>
-                    <p class="text-gray-400">Mapeamos frameworks, CMS e servidores usados, identificando versões desatualizadas.</p>
+                    <h3 class="text-xl font-bold mb-2">SSTI</h3>
+                    <p class="text-gray-400">Server-Side Template Injection em Jinja2, Twig, ERB e outros engines.</p>
                 </div>
 
-                <!-- Card 5 -->
-                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
-                    <div class="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
-                        <svg class="w-7 h-7 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Painéis Expostos</h3>
-                    <p class="text-gray-400">Detectamos admin pages, phpMyAdmin, WordPress login e outros painéis acessíveis.</p>
-                </div>
-
-                <!-- Card 6 -->
+                <!-- Card 6 - Login Bypass -->
                 <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
                     <div class="w-14 h-14 bg-pink-500/20 rounded-xl flex items-center justify-center mb-4">
                         <svg class="w-7 h-7 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold mb-2">Relatório Completo</h3>
-                    <p class="text-gray-400">Relatório executivo com score, achados por severidade e recomendações práticas.</p>
+                    <h3 class="text-xl font-bold mb-2">Login Bypass</h3>
+                    <p class="text-gray-400">Testa autenticação com payloads SQLi: admin'--, OR 1=1, e técnicas de bypass.</p>
+                </div>
+
+                <!-- Card 7 - Cred Leaks -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Credenciais Vazadas</h3>
+                    <p class="text-gray-400">Busca credenciais expostas em Have I Been Pwned, Pastebin e GitHub.</p>
+                </div>
+
+                <!-- Card 8 - Subdomains -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Subdomínios</h3>
+                    <p class="text-gray-400">Enumera subdomínios ativos via DNS brute force e Certificate Transparency.</p>
+                </div>
+
+                <!-- Card 9 - Port Scan -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Port Scanning</h3>
+                    <p class="text-gray-400">Mapeia portas abertas TCP. Detecta MySQL, Redis, SSH, RDP e outros serviços expostos.</p>
+                </div>
+
+                <!-- Card 10 - SSL/TLS -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">SSL/TLS Analysis</h3>
+                    <p class="text-gray-400">Verifica certificados, protocolos TLS, vulnerabilidades (POODLE, BEAST) e configuração.</p>
+                </div>
+
+                <!-- Card 11 - WAF -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-teal-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">WAF Detection</h3>
+                    <p class="text-gray-400">Identifica Cloudflare, AWS WAF, ModSecurity, Sucuri e outros WAFs.</p>
+                </div>
+
+                <!-- Card 12 - Secrets -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 card-hover transition-all">
+                    <div class="w-14 h-14 bg-rose-500/20 rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Secrets Expostos</h3>
+                    <p class="text-gray-400">Detecta AWS keys, GitHub tokens, Stripe keys, chaves privadas e mais.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scan Modes -->
+    <section id="pricing" class="py-20 px-6 bg-gray-900/50">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Escolha seu modo de scan</h2>
+                <p class="text-gray-400 text-lg">Do rápido ao completo, escolha conforme sua necessidade</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- QUICK -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-emerald-500/50 transition-all">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                        <h3 class="text-xl font-bold">QUICK</h3>
+                    </div>
+                    <div class="text-4xl font-bold mb-2">30s</div>
+                    <p class="text-gray-400 mb-6">Para checagens rápidas</p>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            SSL/TLS Analysis
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Security Headers
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Technology Detection
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Secrets Detection
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            WAF Detection
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- FULL -->
+                <div class="bg-gray-900 border border-emerald-500/50 rounded-2xl p-8 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-xs font-bold px-3 py-1 rounded-full">
+                        RECOMENDADO
+                    </div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-3 h-3 bg-emerald-500 rounded-full"></span>
+                        <h3 class="text-xl font-bold">FULL</h3>
+                    </div>
+                    <div class="text-4xl font-bold mb-2">3min</div>
+                    <p class="text-gray-400 mb-6">Análise completa de superfície</p>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Tudo do QUICK
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            SQL Injection Testing
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            XSS Testing
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Directory Enumeration
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Subdomain Enum
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Port Scan
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- AGGRESSIVE -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 hover:border-red-500/50 transition-all">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                        <h3 class="text-xl font-bold">AGGRESSIVE</h3>
+                    </div>
+                    <div class="text-4xl font-bold mb-2">10min</div>
+                    <p class="text-gray-400 mb-6">Pentest automatizado completo</p>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Tudo do FULL
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            RCE / LFI / SSTI Testing
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Login Bypass
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Credential Leak Check
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Full Port Scan (1000 ports)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Deep Crawling
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
