@@ -6,233 +6,258 @@
     <title>Relatório - Nightfall</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background: #0a0a0a; color: #e5e5e5; }
+        body { font-family: 'Inter', sans-serif; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .card { background: #111; border: 1px solid #1f1f1f; }
+        .gradient-text {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #991b1b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
     </style>
 </head>
-<body class="min-h-screen">
-    <header class="border-b border-gray-900 bg-black/50 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-8">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-lg border-b border-gray-800">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z"/>
                     </svg>
-                    <span class="font-bold text-lg">Nightfall</span>
                 </div>
-                <div class="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-md px-3 py-1.5 text-sm">
-                    <span class="text-gray-400">https://</span>
-                    <span class="text-gray-200">vault.corp-example.com</span>
+                <span class="text-xl font-bold gradient-text">Nightfall</span>
+            </a>
+            <a href="/scan" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm font-semibold transition">
+                Novo Scan
+            </a>
+        </div>
+    </nav>
+
+    <main class="pt-32 pb-20 px-6">
+        <div class="max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-xs text-emerald-400 mb-4">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Scan Completo
+                </div>
+                <h1 class="text-4xl font-bold mb-2">Relatório de Segurança</h1>
+                <p class="text-gray-400 mono text-sm" id="targetUrl">https://exemplo.com</p>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold mb-1" id="mSubdomains">0</div>
+                    <div class="text-xs text-gray-500">Subdomínios</div>
+                </div>
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold mb-1" id="mEndpoints">0</div>
+                    <div class="text-xs text-gray-500">Endpoints</div>
+                </div>
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold mb-1" id="mApis">0</div>
+                    <div class="text-xs text-gray-500">APIs</div>
+                </div>
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+                    <div class="text-3xl font-bold mb-1" id="mParameters">0</div>
+                    <div class="text-xs text-gray-500">Parâmetros</div>
                 </div>
             </div>
-            <div class="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-md">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                <span class="text-emerald-400 text-xs font-semibold">COMPLETE</span>
+
+            <!-- Total Findings -->
+            <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-6 mb-6 text-center">
+                <div class="text-5xl font-bold text-red-400 mb-1" id="mFindings">0</div>
+                <div class="text-sm text-gray-400">Vulnerabilidades Encontradas</div>
+            </div>
+
+            <!-- Severity Distribution -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+                <h2 class="text-lg font-bold mb-4">Distribuição por Severidade</h2>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 text-sm text-gray-400">Crítico</div>
+                        <div class="flex-1 h-6 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-red-600 transition-all" id="barCritical" style="width: 0%"></div>
+                        </div>
+                        <div class="w-8 text-right text-red-400 font-bold mono" id="nCritical">0</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 text-sm text-gray-400">Alto</div>
+                        <div class="flex-1 h-6 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-orange-500 transition-all" id="barHigh" style="width: 0%"></div>
+                        </div>
+                        <div class="w-8 text-right text-orange-400 font-bold mono" id="nHigh">0</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 text-sm text-gray-400">Médio</div>
+                        <div class="flex-1 h-6 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-yellow-500 transition-all" id="barMedium" style="width: 0%"></div>
+                        </div>
+                        <div class="w-8 text-right text-yellow-400 font-bold mono" id="nMedium">0</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-20 text-sm text-gray-400">Baixo</div>
+                        <div class="flex-1 h-6 bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-500 transition-all" id="barLow" style="width: 0%"></div>
+                        </div>
+                        <div class="w-8 text-right text-blue-400 font-bold mono" id="nLow">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Findings List -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+                <h2 class="text-lg font-bold mb-4">Vulnerabilidades Detectadas</h2>
+                <div id="findingsList" class="space-y-2">
+                    <p class="text-gray-500 text-center py-8">Carregando...</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="/scan" class="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-bold text-center py-4 rounded-xl transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Novo Scan
+                </a>
+                <button id="downloadBtn" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Baixar Relatório PDF
+                </button>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="mt-8 text-center text-xs text-gray-500">
+                <p>Gerado em <span id="generatedAt" class="mono">--</span></p>
+                <p class="mt-1">Duração: <span id="duration" class="mono">--</span></p>
             </div>
         </div>
-    </header>
+    </main>
 
-    <div class="max-w-7xl mx-auto px-6 py-6">
-        <div class="grid grid-cols-12 gap-4">
-            <!-- Left - Agents -->
-            <aside class="col-span-3">
-                <div class="text-xs text-gray-500 font-semibold mb-3 px-2">AGENTS</div>
-                <div class="space-y-2 text-sm">
-                    <div class="card rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Recon</span></div>
-                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
-                        </div>
-                        <div class="text-xs text-gray-500">concluído</div>
-                    </div>
-                    <div class="card rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">API Analysis</span></div>
-                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
-                        </div>
-                        <div class="text-xs text-gray-500">20 endpoints</div>
-                    </div>
-                    <div class="card rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Attack Surface</span></div>
-                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
-                        </div>
-                        <div class="text-xs text-gray-500">mapa completo</div>
-                    </div>
-                    <div class="card rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Auth Testing</span></div>
-                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
-                        </div>
-                        <div class="text-xs text-gray-500">concluído</div>
-                    </div>
-                    <div class="card rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Web Security</span></div>
-                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
-                        </div>
-                        <div class="text-xs text-gray-500">concluído</div>
-                    </div>
-                    <div class="card rounded-lg p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Vulnerability</span></div>
-                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
-                        </div>
-                        <div class="text-xs text-gray-500">12 vulns</div>
-                    </div>
-                </div>
-            </aside>
+    <script>
+        const RAILWAY_URL = 'https://rootx-production-bdcc.up.railway.app';
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? window.location.origin
+            : RAILWAY_URL;
 
-            <!-- Center - Report -->
-            <main class="col-span-6">
-                <div class="card rounded-xl p-6 mb-4">
-                    <h1 class="text-2xl font-bold mb-6">Relatório de segurança</h1>
+        // Get scan ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const scanId = pathParts[pathParts.length - 1];
 
-                    <!-- Metrics -->
-                    <div class="grid grid-cols-5 gap-4 mb-6">
-                        <div><div class="text-xs text-gray-500 mb-1">SUBDOMAINS</div><div class="text-3xl font-bold">01</div></div>
-                        <div><div class="text-xs text-gray-500 mb-1">ENDPOINTS</div><div class="text-3xl font-bold">127</div></div>
-                        <div><div class="text-xs text-gray-500 mb-1">APIS</div><div class="text-3xl font-bold">24</div></div>
-                        <div><div class="text-xs text-gray-500 mb-1">PARAMETERS</div><div class="text-3xl font-bold">86</div></div>
-                        <div><div class="text-xs text-gray-500 mb-1">FINDINGS</div><div class="text-3xl font-bold text-red-500">12</div></div>
+        const severityColors = {
+            critical: 'bg-red-500/20 text-red-400 border-red-500/50',
+            high: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+            medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+            low: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+            info: 'bg-gray-500/20 text-gray-400 border-gray-500/50'
+        };
+
+        const severityLabels = {
+            critical: 'CRÍTICO',
+            high: 'ALTO',
+            medium: 'MÉDIO',
+            low: 'BAIXO',
+            info: 'INFO'
+        };
+
+        async function loadReport() {
+            try {
+                const response = await fetch(`${API_BASE}/api/scan/${scanId}`);
+                if (!response.ok) throw new Error('Scan não encontrado');
+                const data = await response.json();
+
+                renderReport(data);
+            } catch (err) {
+                document.getElementById('findingsList').innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-red-400 mb-2">Erro ao carregar relatório</p>
+                        <p class="text-gray-500 text-sm">${err.message}</p>
                     </div>
+                `;
+            }
+        }
 
-                    <div class="grid grid-cols-2 gap-6">
-                        <!-- Severity -->
-                        <div>
-                            <h3 class="text-sm font-semibold mb-4">SEVERITY DISTRIBUTION</h3>
-                            <div class="space-y-2">
-                                <div class="flex items-center gap-3"><span class="text-sm w-20">CRITICAL</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-red-500" style="width:5%"></div></div><span class="text-sm font-mono text-red-400">01</span></div>
-                                <div class="flex items-center gap-3"><span class="text-sm w-20">HIGH</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-orange-500" style="width:15%"></div></div><span class="text-sm font-mono text-orange-400">03</span></div>
-                                <div class="flex items-center gap-3"><span class="text-sm w-20">MEDIUM</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-yellow-500" style="width:25%"></div></div><span class="text-sm font-mono text-yellow-400">05</span></div>
-                                <div class="flex items-center gap-3"><span class="text-sm w-20">LOW</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-blue-500" style="width:15%"></div></div><span class="text-sm font-mono text-blue-400">03</span></div>
+        function renderReport(data) {
+            // Header
+            document.getElementById('targetUrl').textContent = data.url || '--';
+
+            // Metrics
+            const findings = data.findings || [];
+            document.getElementById('mSubdomains').textContent = data.subdomains || 0;
+            document.getElementById('mEndpoints').textContent = data.endpoints || 0;
+            document.getElementById('mApis').textContent = data.apis || 0;
+            document.getElementById('mParameters').textContent = data.parameters || 0;
+            document.getElementById('mFindings').textContent = findings.length;
+
+            // Severity
+            const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+            findings.forEach(f => {
+                const sev = (f.severity || 'info').toLowerCase();
+                if (counts[sev] !== undefined) counts[sev]++;
+            });
+
+            const total = findings.length || 1;
+            document.getElementById('nCritical').textContent = counts.critical;
+            document.getElementById('nHigh').textContent = counts.high;
+            document.getElementById('nMedium').textContent = counts.medium;
+            document.getElementById('nLow').textContent = counts.low;
+            document.getElementById('barCritical').style.width = (counts.critical / total * 100) + '%';
+            document.getElementById('barHigh').style.width = (counts.high / total * 100) + '%';
+            document.getElementById('barMedium').style.width = (counts.medium / total * 100) + '%';
+            document.getElementById('barLow').style.width = (counts.low / total * 100) + '%';
+
+            // Findings list
+            const list = document.getElementById('findingsList');
+            if (findings.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhuma vulnerabilidade encontrada.</p>';
+            } else {
+                list.innerHTML = findings.map((f, i) => {
+                    const sev = (f.severity || 'info').toLowerCase();
+                    const colors = severityColors[sev] || severityColors.info;
+                    const label = severityLabels[sev] || sev.toUpperCase();
+                    const detailUrl = `/vulnerability/${scanId}?f=${i}`;
+
+                    return `
+                        <a href="${detailUrl}" class="block bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-red-500/50 rounded-xl p-4 transition">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="px-2 py-0.5 ${colors} text-xs font-bold rounded border mono">${label}</span>
+                                        <h3 class="font-bold truncate">${f.title || f.type || 'Vulnerabilidade'}</h3>
+                                    </div>
+                                    <p class="text-sm text-gray-400 mono truncate">${f.url || f.endpoint || '--'}</p>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
                             </div>
-                        </div>
+                        </a>
+                    `;
+                }).join('');
+            }
 
-                        <!-- Confirmed Findings -->
-                        <div>
-                            <h3 class="text-sm font-semibold mb-4">CONFIRMED FINDINGS</h3>
-                            <div class="space-y-2">
-                                <div class="card rounded p-3 border-l-2 border-red-500">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <div class="font-semibold text-sm">Access Control</div>
-                                            <div class="text-xs text-gray-500 mono">/api/profile</div>
-                                        </div>
-                                        <span class="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded font-mono">HIGH</span>
-                                    </div>
-                                </div>
-                                <div class="card rounded p-3 border-l-2 border-orange-500">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <div class="font-semibold text-sm">Cross-Site Scripting</div>
-                                            <div class="text-xs text-gray-500 mono">/api/search</div>
-                                        </div>
-                                        <span class="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded font-mono">MEDIUM</span>
-                                    </div>
-                                </div>
-                                <div class="card rounded p-3 border-l-2 border-yellow-500">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <div class="font-semibold text-sm">Security Misconfiguration</div>
-                                            <div class="text-xs text-gray-500 mono">/server-status</div>
-                                        </div>
-                                        <span class="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-mono">MEDIUM</span>
-                                    </div>
-                                </div>
-                                <div class="card rounded p-3 border-l-2 border-blue-500">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <div class="font-semibold text-sm">Information Disclosure</div>
-                                            <div class="text-xs text-gray-500 mono">/api/users</div>
-                                        </div>
-                                        <span class="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-mono">LOW</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            // Footer
+            if (data.created_at) {
+                const date = new Date(data.created_at);
+                document.getElementById('generatedAt').textContent = date.toLocaleString('pt-BR');
+            }
+            if (data.duration) {
+                document.getElementById('duration').textContent = data.duration;
+            }
+        }
 
-                    <!-- Report Sections -->
-                    <div class="mt-6">
-                        <h3 class="text-sm font-semibold mb-3">REPORT SECTIONS</h3>
-                        <div class="grid grid-cols-3 gap-2 text-xs">
-                            <div class="card rounded p-2">Executive Summary</div>
-                            <div class="card rounded p-2">Attack Surface</div>
-                            <div class="card rounded p-2">Findings</div>
-                            <div class="card rounded p-2">Severity</div>
-                            <div class="card rounded p-2">Evidence</div>
-                            <div class="card rounded p-2">Affected Assets</div>
-                            <div class="card rounded p-2">Recommendations</div>
-                            <div class="card rounded p-2">Timeline</div>
-                        </div>
-                    </div>
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            window.print();
+        });
 
-                    <!-- Actions -->
-                    <div class="flex justify-center gap-3 mt-8">
-                        <button class="px-6 py-2.5 card hover:bg-gray-800 rounded-lg font-semibold text-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Novo scan
-                        </button>
-                        <button class="px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-lg font-semibold text-sm text-white">
-                            Ver relatório completo
-                        </button>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Right - Activity -->
-            <aside class="col-span-3">
-                <div class="text-xs text-gray-500 font-semibold mb-3 px-2">LIVE ACTIVITY</div>
-                <div class="card rounded-lg p-4 space-y-2 mono text-xs">
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:15]</span> <span class="text-orange-400">Access control behavior detect...</span></div>
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:21]</span> <span class="text-orange-400">Potential vulnerability result...</span></div>
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:25]</span> <span class="text-emerald-400">Validating finding: Access Control</span></div>
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:26]</span> <span class="text-emerald-400">Finding confirmed with evidence</span></div>
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:27]</span> Finding: XSS - /api/search</div>
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:28]</span> Finding: Security Misconfiguration</div>
-                    <div class="text-gray-400"><span class="text-gray-600">[08:42:29]</span> Finding: Information Disclosure</div>
-                </div>
-
-                <div class="text-xs text-gray-500 font-semibold mb-3 mt-6 px-2">FINDINGS</div>
-                <div class="space-y-2">
-                    <div class="card rounded p-2 text-xs">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px]">LOW</span>
-                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
-                        </div>
-                        <div class="font-semibold">Information Disclosure</div>
-                        <div class="text-gray-500 mono">GET /api/users</div>
-                    </div>
-                    <div class="card rounded p-2 text-xs">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-[10px]">MEDIUM</span>
-                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
-                        </div>
-                        <div class="font-semibold">Security Misconfiguration</div>
-                        <div class="text-gray-500 mono">GET /server-status</div>
-                    </div>
-                    <div class="card rounded p-2 text-xs">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-[10px]">MEDIUM</span>
-                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
-                        </div>
-                        <div class="font-semibold">Cross-Site Scripting</div>
-                        <div class="text-gray-500 mono">POST /api/search</div>
-                    </div>
-                    <div class="card rounded p-2 text-xs">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px]">HIGH</span>
-                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
-                        </div>
-                        <div class="font-semibold">Access Control</div>
-                        <div class="text-gray-500 mono">GET /api/profile</div>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </div>
+        loadReport();
+    </script>
 </body>
 </html>

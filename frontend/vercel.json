@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/scan", "destination": "/scan.html" },
-    { "source": "/report/:id", "destination": "/report.html" }
+    { "source": "/report/:id", "destination": "/report.html" },
+    { "source": "/vulnerability/:id", "destination": "/vulnerability.html" }
   ]
 }
