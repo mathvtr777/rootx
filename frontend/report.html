@@ -3,381 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório - ROOTX</title>
+    <title>Relatório - Nightfall</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap');
-
-        body { font-family: 'Inter', sans-serif; }
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #0a0a0a; color: #e5e5e5; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .gradient-text {
-            background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #8b5cf6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .score-ring {
-            stroke-dasharray: 251;
-            stroke-dashoffset: 251;
-            animation: score-fill 1.5s ease-out forwards;
-        }
-
-        @keyframes score-fill {
-            to { stroke-dashoffset: var(--score-offset); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .severity-critical { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05)); border-color: rgba(239,68,68,0.3); }
-        .severity-high { background: linear-gradient(135deg, rgba(249,115,22,0.2), rgba(249,115,22,0.05)); border-color: rgba(249,115,22,0.3); }
-        .severity-medium { background: linear-gradient(135deg, rgba(234,179,8,0.2), rgba(234,179,8,0.05)); border-color: rgba(234,179,8,0.3); }
-        .severity-low { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.05)); border-color: rgba(59,130,246,0.3); }
-        .severity-info { background: linear-gradient(135deg, rgba(107,114,128,0.2), rgba(107,114,128,0.05)); border-color: rgba(107,114,128,0.3); }
+        .card { background: #111; border: 1px solid #1f1f1f; }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen">
-    <!-- Navbar -->
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-lg border-b border-gray-800">
-        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                    <span class="text-black font-bold text-lg">RX</span>
-                </div>
-                <span class="text-xl font-bold gradient-text">ROOTX</span>
-            </a>
-            <div class="flex items-center gap-4">
-                <button onclick="window.print()" class="text-gray-400 hover:text-white transition flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+<body class="min-h-screen">
+    <header class="border-b border-gray-900 bg-black/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z"/>
                     </svg>
-                    Exportar
-                </button>
-                <a href="/scan" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold px-5 py-2 rounded-lg transition">
-                    Novo Scan
-                </a>
+                    <span class="font-bold text-lg">Nightfall</span>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-900 border border-gray-800 rounded-md px-3 py-1.5 text-sm">
+                    <span class="text-gray-400">https://</span>
+                    <span class="text-gray-200">vault.corp-example.com</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-md">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                <span class="text-emerald-400 text-xs font-semibold">COMPLETE</span>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Main Content -->
-    <main class="pt-24 pb-20 px-6">
-        <div class="max-w-4xl mx-auto">
-            <!-- Loading State -->
-            <div id="loading" class="text-center py-20">
-                <div class="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full spinner mx-auto mb-6"></div>
-                <p class="text-gray-400">Carregando relatório...</p>
-            </div>
+    <div class="max-w-7xl mx-auto px-6 py-6">
+        <div class="grid grid-cols-12 gap-4">
+            <!-- Left - Agents -->
+            <aside class="col-span-3">
+                <div class="text-xs text-gray-500 font-semibold mb-3 px-2">AGENTS</div>
+                <div class="space-y-2 text-sm">
+                    <div class="card rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Recon</span></div>
+                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
+                        </div>
+                        <div class="text-xs text-gray-500">concluído</div>
+                    </div>
+                    <div class="card rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">API Analysis</span></div>
+                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
+                        </div>
+                        <div class="text-xs text-gray-500">20 endpoints</div>
+                    </div>
+                    <div class="card rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Attack Surface</span></div>
+                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
+                        </div>
+                        <div class="text-xs text-gray-500">mapa completo</div>
+                    </div>
+                    <div class="card rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Auth Testing</span></div>
+                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
+                        </div>
+                        <div class="text-xs text-gray-500">concluído</div>
+                    </div>
+                    <div class="card rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Web Security</span></div>
+                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
+                        </div>
+                        <div class="text-xs text-gray-500">concluído</div>
+                    </div>
+                    <div class="card rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center gap-2"><span class="w-2 h-2 bg-emerald-500 rounded-full"></span><span class="font-semibold">Vulnerability</span></div>
+                            <span class="text-xs text-emerald-400 font-mono">DONE</span>
+                        </div>
+                        <div class="text-xs text-gray-500">12 vulns</div>
+                    </div>
+                </div>
+            </aside>
 
-            <!-- Report Content -->
-            <div id="report" class="hidden">
-                <!-- Header -->
-                <div class="flex flex-col md:flex-row gap-8 items-center mb-10 fade-in">
-                    <!-- Score Circle -->
-                    <div class="relative w-48 h-48 shrink-0">
-                        <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="40" fill="none" stroke="#1f2937" stroke-width="8"/>
-                            <circle id="scoreCircle" class="score-ring" cx="50" cy="50" r="40" fill="none" stroke-width="8" stroke-linecap="round"/>
-                        </svg>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span id="scoreValue" class="text-5xl font-bold">--</span>
-                            <span class="text-gray-500">/ 100</span>
+            <!-- Center - Report -->
+            <main class="col-span-6">
+                <div class="card rounded-xl p-6 mb-4">
+                    <h1 class="text-2xl font-bold mb-6">Relatório de segurança</h1>
+
+                    <!-- Metrics -->
+                    <div class="grid grid-cols-5 gap-4 mb-6">
+                        <div><div class="text-xs text-gray-500 mb-1">SUBDOMAINS</div><div class="text-3xl font-bold">01</div></div>
+                        <div><div class="text-xs text-gray-500 mb-1">ENDPOINTS</div><div class="text-3xl font-bold">127</div></div>
+                        <div><div class="text-xs text-gray-500 mb-1">APIS</div><div class="text-3xl font-bold">24</div></div>
+                        <div><div class="text-xs text-gray-500 mb-1">PARAMETERS</div><div class="text-3xl font-bold">86</div></div>
+                        <div><div class="text-xs text-gray-500 mb-1">FINDINGS</div><div class="text-3xl font-bold text-red-500">12</div></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <!-- Severity -->
+                        <div>
+                            <h3 class="text-sm font-semibold mb-4">SEVERITY DISTRIBUTION</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-3"><span class="text-sm w-20">CRITICAL</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-red-500" style="width:5%"></div></div><span class="text-sm font-mono text-red-400">01</span></div>
+                                <div class="flex items-center gap-3"><span class="text-sm w-20">HIGH</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-orange-500" style="width:15%"></div></div><span class="text-sm font-mono text-orange-400">03</span></div>
+                                <div class="flex items-center gap-3"><span class="text-sm w-20">MEDIUM</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-yellow-500" style="width:25%"></div></div><span class="text-sm font-mono text-yellow-400">05</span></div>
+                                <div class="flex items-center gap-3"><span class="text-sm w-20">LOW</span><div class="flex-1 h-6 bg-gray-900 rounded relative overflow-hidden"><div class="absolute inset-y-0 left-0 bg-blue-500" style="width:15%"></div></div><span class="text-sm font-mono text-blue-400">03</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Confirmed Findings -->
+                        <div>
+                            <h3 class="text-sm font-semibold mb-4">CONFIRMED FINDINGS</h3>
+                            <div class="space-y-2">
+                                <div class="card rounded p-3 border-l-2 border-red-500">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-semibold text-sm">Access Control</div>
+                                            <div class="text-xs text-gray-500 mono">/api/profile</div>
+                                        </div>
+                                        <span class="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded font-mono">HIGH</span>
+                                    </div>
+                                </div>
+                                <div class="card rounded p-3 border-l-2 border-orange-500">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-semibold text-sm">Cross-Site Scripting</div>
+                                            <div class="text-xs text-gray-500 mono">/api/search</div>
+                                        </div>
+                                        <span class="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded font-mono">MEDIUM</span>
+                                    </div>
+                                </div>
+                                <div class="card rounded p-3 border-l-2 border-yellow-500">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-semibold text-sm">Security Misconfiguration</div>
+                                            <div class="text-xs text-gray-500 mono">/server-status</div>
+                                        </div>
+                                        <span class="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded font-mono">MEDIUM</span>
+                                    </div>
+                                </div>
+                                <div class="card rounded p-3 border-l-2 border-blue-500">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="font-semibold text-sm">Information Disclosure</div>
+                                            <div class="text-xs text-gray-500 mono">/api/users</div>
+                                        </div>
+                                        <span class="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded font-mono">LOW</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Info -->
-                    <div class="flex-1 text-center md:text-left">
-                        <h1 class="text-3xl font-bold mb-2">Relatório de Segurança</h1>
-                        <p id="reportUrl" class="mono text-gray-400 text-sm mb-4 break-all">Carregando...</p>
-                        <div id="classification" class="inline-block px-4 py-2 rounded-full text-sm font-semibold">
-                            Classificando...
+                    <!-- Report Sections -->
+                    <div class="mt-6">
+                        <h3 class="text-sm font-semibold mb-3">REPORT SECTIONS</h3>
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="card rounded p-2">Executive Summary</div>
+                            <div class="card rounded p-2">Attack Surface</div>
+                            <div class="card rounded p-2">Findings</div>
+                            <div class="card rounded p-2">Severity</div>
+                            <div class="card rounded p-2">Evidence</div>
+                            <div class="card rounded p-2">Affected Assets</div>
+                            <div class="card rounded p-2">Recommendations</div>
+                            <div class="card rounded p-2">Timeline</div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10 fade-in">
-                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-                        <div id="criticalCount" class="text-3xl font-bold text-red-500">-</div>
-                        <div class="text-sm text-gray-500">Críticas</div>
-                    </div>
-                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-                        <div id="highCount" class="text-3xl font-bold text-orange-500">-</div>
-                        <div class="text-sm text-gray-500">Altas</div>
-                    </div>
-                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-                        <div id="mediumCount" class="text-3xl font-bold text-yellow-500">-</div>
-                        <div class="text-sm text-gray-500">Médias</div>
-                    </div>
-                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-                        <div id="lowCount" class="text-3xl font-bold text-blue-500">-</div>
-                        <div class="text-sm text-gray-500">Baixas</div>
-                    </div>
-                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
-                        <div id="infoCount" class="text-3xl font-bold text-gray-500">-</div>
-                        <div class="text-sm text-gray-500">Info</div>
+                    <!-- Actions -->
+                    <div class="flex justify-center gap-3 mt-8">
+                        <button class="px-6 py-2.5 card hover:bg-gray-800 rounded-lg font-semibold text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Novo scan
+                        </button>
+                        <button class="px-6 py-2.5 bg-red-500 hover:bg-red-600 rounded-lg font-semibold text-sm text-white">
+                            Ver relatório completo
+                        </button>
                     </div>
                 </div>
+            </main>
 
-                <!-- Technologies -->
-                <div id="techSection" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-8 fade-in hidden">
-                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-                        </svg>
-                        Tecnologias Detectadas
-                    </h2>
-                    <div id="techList" class="flex flex-wrap gap-2">
-                        <!-- Technologies will be inserted here -->
-                    </div>
+            <!-- Right - Activity -->
+            <aside class="col-span-3">
+                <div class="text-xs text-gray-500 font-semibold mb-3 px-2">LIVE ACTIVITY</div>
+                <div class="card rounded-lg p-4 space-y-2 mono text-xs">
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:15]</span> <span class="text-orange-400">Access control behavior detect...</span></div>
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:21]</span> <span class="text-orange-400">Potential vulnerability result...</span></div>
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:25]</span> <span class="text-emerald-400">Validating finding: Access Control</span></div>
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:26]</span> <span class="text-emerald-400">Finding confirmed with evidence</span></div>
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:27]</span> Finding: XSS - /api/search</div>
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:28]</span> Finding: Security Misconfiguration</div>
+                    <div class="text-gray-400"><span class="text-gray-600">[08:42:29]</span> Finding: Information Disclosure</div>
                 </div>
 
-                <!-- Security Headers -->
-                <div id="headersSection" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-8 fade-in hidden">
-                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                        </svg>
-                        Headers de Segurança
-                    </h2>
-                    <div id="headersList" class="space-y-3">
-                        <!-- Headers will be inserted here -->
+                <div class="text-xs text-gray-500 font-semibold mb-3 mt-6 px-2">FINDINGS</div>
+                <div class="space-y-2">
+                    <div class="card rounded p-2 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px]">LOW</span>
+                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
+                        </div>
+                        <div class="font-semibold">Information Disclosure</div>
+                        <div class="text-gray-500 mono">GET /api/users</div>
+                    </div>
+                    <div class="card rounded p-2 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-[10px]">MEDIUM</span>
+                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
+                        </div>
+                        <div class="font-semibold">Security Misconfiguration</div>
+                        <div class="text-gray-500 mono">GET /server-status</div>
+                    </div>
+                    <div class="card rounded p-2 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-[10px]">MEDIUM</span>
+                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
+                        </div>
+                        <div class="font-semibold">Cross-Site Scripting</div>
+                        <div class="text-gray-500 mono">POST /api/search</div>
+                    </div>
+                    <div class="card rounded p-2 text-xs">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px]">HIGH</span>
+                            <span class="text-emerald-400 text-[10px]">CONFIRMED</span>
+                        </div>
+                        <div class="font-semibold">Access Control</div>
+                        <div class="text-gray-500 mono">GET /api/profile</div>
                     </div>
                 </div>
-
-                <!-- Findings -->
-                <div class="mb-8">
-                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        Vulnerabilidades Encontradas
-                        <span id="findingsCount" class="text-sm font-normal text-gray-500">(0)</span>
-                    </h2>
-
-                    <div id="findingsList" class="space-y-4">
-                        <!-- Findings will be inserted here -->
-                    </div>
-
-                    <div id="noFindings" class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-8 text-center hidden">
-                        <svg class="w-16 h-16 text-emerald-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <h3 class="text-xl font-bold text-emerald-400 mb-2">Nenhuma vulnerabilidade encontrada!</h3>
-                        <p class="text-gray-400">Seu site está bem configurado. Continue mantendo as boas práticas.</p>
-                    </div>
-                </div>
-
-                <!-- Recommendations -->
-                <div id="recommendationsSection" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hidden">
-                    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                        </svg>
-                        Recomendações
-                    </h2>
-                    <ul id="recommendationsList" class="space-y-2 text-gray-300">
-                        <!-- Recommendations will be inserted here -->
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Error State -->
-            <div id="errorState" class="hidden text-center py-20">
-                <svg class="w-20 h-20 text-red-500 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h2 class="text-2xl font-bold text-red-400 mb-2">Erro ao Carregar</h2>
-                <p id="errorMessage" class="text-gray-400 mb-6">Não foi possível carregar o relatório.</p>
-                <a href="/scan" class="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold px-6 py-3 rounded-lg transition">
-                    Tentar Novamente
-                </a>
-            </div>
+            </aside>
         </div>
-    </main>
-
-    <script>
-        // Backend API URL
-        const RAILWAY_URL = 'https://rootx-production-bdcc.up.railway.app';
-        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? window.location.origin
-            : RAILWAY_URL;
-        const scanId = window.location.pathname.split('/').pop();
-
-        // Severity config
-        const severityConfig = {
-            critical: { color: 'red', bg: 'severity-critical', icon: '🔴', label: 'Crítica' },
-            high: { color: 'orange', bg: 'severity-high', icon: '🟠', label: 'Alta' },
-            medium: { color: 'yellow', bg: 'severity-medium', icon: '🟡', label: 'Média' },
-            low: { color: 'blue', bg: 'severity-low', icon: '🔵', label: 'Baixa' },
-            info: { color: 'gray', bg: 'severity-info', icon: '⚪', label: 'Info' }
-        };
-
-        // Header config
-        const headerConfig = {
-            x_frame_options: 'X-Frame-Options',
-            x_content_type_options: 'X-Content-Type-Options',
-            strict_transport_security: 'Strict-Transport-Security (HSTS)',
-            content_security_policy: 'Content-Security-Policy (CSP)',
-            x_xss_protection: 'X-XSS-Protection',
-            referrer_policy: 'Referrer-Policy',
-            permissions_policy: 'Permissions-Policy'
-        };
-
-        async function loadReport() {
-            try {
-                const response = await fetch(`${API_BASE}/api/scan/${scanId}/report`);
-
-                if (!response.ok) {
-                    throw new Error('Relatório não encontrado');
-                }
-
-                const data = await response.json();
-                renderReport(data);
-
-            } catch (err) {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('errorState').classList.remove('hidden');
-                document.getElementById('errorMessage').textContent = err.message;
-            }
-        }
-
-        function renderReport(data) {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('report').classList.remove('hidden');
-
-            // URL
-            document.getElementById('reportUrl').textContent = data.report_url;
-
-            // Score
-            const score = data.score;
-            document.getElementById('scoreValue').textContent = score;
-
-            // Score color and circle
-            const scoreCircle = document.getElementById('scoreCircle');
-            let scoreColor = '#10b981'; // emerald
-            if (score < 70) scoreColor = '#f59e0b'; // yellow
-            if (score < 50) scoreColor = '#ef4444'; // red
-            scoreCircle.style.stroke = scoreColor;
-
-            // Score ring offset (251 = circumference)
-            const offset = 251 - (251 * score / 100);
-            scoreCircle.style.setProperty('--score-offset', offset);
-
-            // Classification
-            const classification = document.getElementById('classification');
-            const classData = {
-                'Excelente': { bg: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', text: '🟢 Excelente' },
-                'Bom': { bg: 'bg-blue-500/20 text-blue-400 border border-blue-500/30', text: '🔵 Bom' },
-                'Atenção': { bg: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30', text: '🟡 Atenção' },
-                'Crítico': { bg: 'bg-orange-500/20 text-orange-400 border border-orange-500/30', text: '🟠 Crítico' },
-                'Muito Crítico': { bg: 'bg-red-500/20 text-red-400 border border-red-500/30', text: '🔴 Muito Crítico' }
-            };
-            const classInfo = classData[data.classification] || classData['Atenção'];
-            classification.className = `inline-block px-4 py-2 rounded-full text-sm font-semibold ${classInfo.bg}`;
-            classification.textContent = classInfo.text;
-
-            // Severity counts
-            const counts = data.summary.severity_counts;
-            document.getElementById('criticalCount').textContent = counts.critical || 0;
-            document.getElementById('highCount').textContent = counts.high || 0;
-            document.getElementById('mediumCount').textContent = counts.medium || 0;
-            document.getElementById('lowCount').textContent = counts.low || 0;
-            document.getElementById('infoCount').textContent = counts.info || 0;
-
-            // Technologies
-            if (data.technologies && data.technologies.length > 0) {
-                document.getElementById('techSection').classList.remove('hidden');
-                const techList = document.getElementById('techList');
-                techList.innerHTML = data.technologies.map(tech => `
-                    <span class="bg-gray-800 border border-gray-700 px-3 py-1 rounded-lg text-sm">
-                        ${tech.name}${tech.version ? ` ${tech.version}` : ''}
-                    </span>
-                `).join('');
-            }
-
-            // Security Headers
-            if (data.security_headers) {
-                document.getElementById('headersSection').classList.remove('hidden');
-                const headersList = document.getElementById('headersList');
-                headersList.innerHTML = Object.entries(headerConfig).map(([key, label]) => {
-                    const present = data.security_headers[key];
-                    return `
-                        <div class="flex items-center gap-3">
-                            ${present
-                                ? '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
-                                : '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
-                            }
-                            <span>${label}</span>
-                            <span class="text-sm ${present ? 'text-emerald-400' : 'text-red-400'}">${present ? 'Configurado' : 'Faltando'}</span>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Findings
-            const findings = data.findings || [];
-            document.getElementById('findingsCount').textContent = `(${findings.length})`;
-
-            if (findings.length === 0) {
-                document.getElementById('noFindings').classList.remove('hidden');
-            } else {
-                const findingsList = document.getElementById('findingsList');
-
-                // Sort by severity
-                const severityOrder = ['critical', 'high', 'medium', 'low', 'info'];
-                findings.sort((a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity));
-
-                findingsList.innerHTML = findings.map((finding, i) => {
-                    const config = severityConfig[finding.severity] || severityConfig.info;
-                    return `
-                        <div class="border ${config.bg} rounded-xl p-5 fade-in" style="animation-delay: ${i * 50}ms">
-                            <div class="flex items-start gap-3 mb-3">
-                                <span class="text-2xl">${config.icon}</span>
-                                <div class="flex-1">
-                                    <h3 class="font-bold text-lg">${finding.name}</h3>
-                                    <span class="text-sm text-${config.color}-400">${config.label}</span>
-                                </div>
-                            </div>
-                            <p class="text-gray-400 text-sm mb-3">${finding.description || 'Sem descrição'}</p>
-                            <div class="mono text-xs text-gray-500 mb-3 break-all">📍 ${finding.location}</div>
-                            <div class="bg-gray-900/50 rounded-lg p-3">
-                                <div class="text-xs text-gray-500 mb-1">Recomendação:</div>
-                                <p class="text-sm text-gray-300">${finding.recommendation || 'Revise e corrija esta vulnerabilidade.'}</p>
-                            </div>
-                            ${finding.cve_id ? `
-                                <div class="mt-3 inline-flex items-center gap-2 bg-red-500/20 px-3 py-1 rounded-full">
-                                    <span class="text-red-400 text-sm font-mono">${finding.cve_id}</span>
-                                    ${finding.cvss ? `<span class="text-xs text-red-300">CVSS: ${finding.cvss}</span>` : ''}
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Recommendations
-            if (data.recommendations && data.recommendations.length > 0) {
-                document.getElementById('recommendationsSection').classList.remove('hidden');
-                const recList = document.getElementById('recommendationsList');
-                recList.innerHTML = data.recommendations.map(rec => `
-                    <li class="flex items-start gap-2">
-                        <span class="text-emerald-500 mt-1">•</span>
-                        <span>${rec}</span>
-                    </li>
-                `).join('');
-            }
-        }
-
-        // Load on page
-        loadReport();
-    </script>
+    </div>
 </body>
 </html>
