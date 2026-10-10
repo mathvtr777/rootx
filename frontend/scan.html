@@ -287,10 +287,11 @@
                 const response = await fetch(`${API_BASE}/api/scan/${scanId}`);
                 const data = await response.json();
 
-                updateProgress(data.progress);
-                updateSteps(data.progress);
+                updateProgress(data.progress || 0);
+                updateSteps(data.progress || 0);
 
-                if (data.status === 'completed') {
+                // Verifica se o scan terminou (status completed + progress 100)
+                if (data.status === 'completed' || data.progress === 100) {
                     clearInterval(pollInterval);
                     window.location.href = `/report/${scanId}`;
                 } else if (data.status === 'failed') {

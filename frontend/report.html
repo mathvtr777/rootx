@@ -169,11 +169,33 @@
 
         async function loadReport() {
             try {
-                const response = await fetch(`${API_BASE}/api/scan/${scanId}`);
-                if (!response.ok) throw new Error('Scan não encontrado');
+                const response = await fetch(`${API_BASE}/api/scan/${scanId}/report`);
+                if (!response.ok) {
+                    // Se ainda não está completo, tenta o endpoint de status
+                    if (response.status === 400) {
+                        const statusResp = await fetch(`${API_BASE}/api/scan/${scanId}`);
+                        const status = await statusResp.json();
+                        throw new Error(`Scan ainda em andamento (${status.status}). Aguarde.`);
+                    }
+                    throw new Error('Scan não encontrado');
+                }
                 const data = await response.json();
 
-                renderReport(data);
+                // Endpoint /report retorna estrutura aninhada diferente
+                const findings = data.findings || [];
+                const summary = data.summary || {};
+                const severityCounts = summary.severity_counts || {};
+
+                renderReport({
+                    url: data.report_url,
+                    subdomains: 0,
+                    endpoints: 0,
+                    apis: 0,
+                    parameters: 0,
+                    findings: findings,
+                    duration_seconds: data.duration_seconds,
+                    created_at: data.summary?.timestamp
+                });
             } catch (err) {
                 document.getElementById('findingsList').innerHTML = `
                     <div class="text-center py-8">
@@ -190,28 +212,28 @@
 
             // Metrics
             const findings = data.findings || [];
+            const sevCounts = { critical: 0, high: 0, medium: 0, low: 0 };
+            findings.forEach(f => {
+                const sev = (f.severity || f.severity_level || 'info').toLowerCase();
+                if (sevCounts[sev] !== undefined) sevCounts[sev]++;
+            });
+
             document.getElementById('mSubdomains').textContent = data.subdomains || 0;
             document.getElementById('mEndpoints').textContent = data.endpoints || 0;
             document.getElementById('mApis').textContent = data.apis || 0;
             document.getElementById('mParameters').textContent = data.parameters || 0;
             document.getElementById('mFindings').textContent = findings.length;
 
-            // Severity
-            const counts = { critical: 0, high: 0, medium: 0, low: 0 };
-            findings.forEach(f => {
-                const sev = (f.severity || 'info').toLowerCase();
-                if (counts[sev] !== undefined) counts[sev]++;
-            });
-
+            // Severity bars
             const total = findings.length || 1;
-            document.getElementById('nCritical').textContent = counts.critical;
-            document.getElementById('nHigh').textContent = counts.high;
-            document.getElementById('nMedium').textContent = counts.medium;
-            document.getElementById('nLow').textContent = counts.low;
-            document.getElementById('barCritical').style.width = (counts.critical / total * 100) + '%';
-            document.getElementById('barHigh').style.width = (counts.high / total * 100) + '%';
-            document.getElementById('barMedium').style.width = (counts.medium / total * 100) + '%';
-            document.getElementById('barLow').style.width = (counts.low / total * 100) + '%';
+            document.getElementById('nCritical').textContent = sevCounts.critical;
+            document.getElementById('nHigh').textContent = sevCounts.high;
+            document.getElementById('nMedium').textContent = sevCounts.medium;
+            document.getElementById('nLow').textContent = sevCounts.low;
+            document.getElementById('barCritical').style.width = (sevCounts.critical / total * 100) + '%';
+            document.getElementById('barHigh').style.width = (sevCounts.high / total * 100) + '%';
+            document.getElementById('barMedium').style.width = (sevCounts.medium / total * 100) + '%';
+            document.getElementById('barLow').style.width = (sevCounts.low / total * 100) + '%';
 
             // Findings list
             const list = document.getElementById('findingsList');
@@ -230,9 +252,9 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2 mb-1">
                                         <span class="px-2 py-0.5 ${colors} text-xs font-bold rounded border mono">${label}</span>
-                                        <h3 class="font-bold truncate">${f.title || f.type || 'Vulnerabilidade'}</h3>
+                                        <h3 class="font-bold truncate">${f.name || f.title || 'Vulnerabilidade'}</h3>
                                     </div>
-                                    <p class="text-sm text-gray-400 mono truncate">${f.url || f.endpoint || '--'}</p>
+                                    <p class="text-sm text-gray-400 mono truncate">${f.location || f.url || '--'}</p>
                                 </div>
                                 <svg class="w-5 h-5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -248,8 +270,11 @@
                 const date = new Date(data.created_at);
                 document.getElementById('generatedAt').textContent = date.toLocaleString('pt-BR');
             }
-            if (data.duration) {
-                document.getElementById('duration').textContent = data.duration;
+            if (data.duration_seconds) {
+                const sec = Math.round(data.duration_seconds);
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                document.getElementById('duration').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
             }
         }
 
