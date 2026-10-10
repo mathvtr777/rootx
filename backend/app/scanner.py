@@ -28,6 +28,27 @@ class SecurityScanner:
         ScanType.AGGRESSIVE: 600,
     }
 
+    # Tempos mínimos de execução por fase (segundos)
+    MODE_PHASE_DELAYS = {
+        ScanType.QUICK: {
+            "discovery": 5,
+            "enumeration": 3,
+        },
+        ScanType.FULL: {
+            "discovery": 5,
+            "enumeration": 15,
+            "deep_enum": 20,
+            "active_testing": 30,
+        },
+        ScanType.AGGRESSIVE: {
+            "discovery": 5,
+            "enumeration": 20,
+            "deep_enum": 30,
+            "active_testing": 45,
+            "credential_leaks": 60,
+        },
+    }
+
     # Padrões para detectar tecnologias
     TECH_PATTERNS = [
         (r"wp-content|wp-includes", "WordPress"),
@@ -112,14 +133,18 @@ class SecurityScanner:
         findings: List[Finding] = []
         technologies: List[Technology] = []
         security_headers = SecurityHeaders()
+        phase_delays = self.MODE_PHASE_DELAYS.get(scan_type, {})
+        min_duration = sum(phase_delays.values()) if phase_delays else 30
 
-        print(f"[ROOTX] Iniciando scan {scan_type.value} em {url}")
+        print(f"[ROOTX] Iniciando scan {scan_type.value} em {url} (mínimo {min_duration}s)")
 
         try:
             # ==============================================
             # PHASE 1: DISCOVERY (todos os modos)
             # ==============================================
             print(f"[ROOTX] Phase 1: Discovery")
+            phase_start = time.time()
+
             response = await self.client.get(url, timeout=self.timeout)
             html_content = response.text
             headers = {k.lower(): v for k, v in response.headers.items()}
@@ -146,10 +171,16 @@ class SecurityScanner:
             # 1.6 Missing headers
             findings.extend(self._check_info_leakage(headers))
 
+            # Garante tempo mínimo da fase
+            phase_elapsed = time.time() - phase_start
+            if phase_elapsed < phase_delays.get("discovery", 5):
+                await asyncio.sleep(phase_delays["discovery"] - phase_elapsed)
+
             # ==============================================
             # PHASE 2: ENUMERATION (QUICK+)
             # ==============================================
             print(f"[ROOTX] Phase 2: Enumeration")
+            phase_start = time.time()
 
             # 2.1 Paths críticos expostos
             findings.extend(await self._check_common_paths(final_url))
@@ -164,11 +195,17 @@ class SecurityScanner:
             crawl_results = await self.crawler.crawl(final_url)
             print(f"[ROOTX] Crawled {crawl_results['pages_crawled']} pages")
 
+            # Garante tempo mínimo da fase
+            phase_elapsed = time.time() - phase_start
+            if phase_elapsed < phase_delays.get("enumeration", 3):
+                await asyncio.sleep(phase_delays["enumeration"] - phase_elapsed)
+
             # ==============================================
             # PHASE 3: DEEP ENUMERATION (FULL+)
             # ==============================================
             if scan_type in [ScanType.FULL, ScanType.AGGRESSIVE]:
                 print(f"[ROOTX] Phase 3: Deep Enum")
+                phase_start = time.time()
 
                 # 3.1 Subdomain enumeration
                 sub_findings = await self.subdomain_enum.enumerate(final_url, mode="full")
@@ -186,11 +223,17 @@ class SecurityScanner:
                 api_findings = await self._find_api_endpoints(final_url, crawl_results)
                 findings.extend(api_findings)
 
+                # Garante tempo mínimo da fase
+                phase_elapsed = time.time() - phase_start
+                if phase_elapsed < phase_delays.get("deep_enum", 20):
+                    await asyncio.sleep(phase_delays["deep_enum"] - phase_elapsed)
+
             # ==============================================
             # PHASE 4: ACTIVE VULNERABILITY TESTING (FULL+)
             # ==============================================
             if scan_type in [ScanType.FULL, ScanType.AGGRESSIVE]:
                 print(f"[ROOTX] Phase 4: Active Testing")
+                phase_start = time.time()
 
                 # Detecta forms
                 forms = await self.form_detector.find_forms(final_url)
@@ -199,11 +242,17 @@ class SecurityScanner:
                 vuln_findings = await self.active_scanner.scan_all(final_url, forms)
                 findings.extend(vuln_findings)
 
+                # Garante tempo mínimo da fase
+                phase_elapsed = time.time() - phase_start
+                if phase_elapsed < phase_delays.get("active_testing", 30):
+                    await asyncio.sleep(phase_delays["active_testing"] - phase_elapsed)
+
             # ==============================================
             # PHASE 5: CREDENTIAL LEAKS (AGGRESSIVE only)
             # ==============================================
             if scan_type == ScanType.AGGRESSIVE:
                 print(f"[ROOTX] Phase 5: Credential Leaks")
+                phase_start = time.time()
 
                 domain = urlparse(url).netloc
                 if not domain.startswith('www.'):
@@ -228,9 +277,19 @@ class SecurityScanner:
                 aggressive_port_findings = await self.port_scanner.scan(final_url, mode="full")
                 findings.extend(aggressive_port_findings)
 
-            # Verifica se ainda tem tempo
+                # Garante tempo mínimo da fase
+                phase_elapsed = time.time() - phase_start
+                if phase_elapsed < phase_delays.get("credential_leaks", 60):
+                    await asyncio.sleep(phase_delays["credential_leaks"] - phase_elapsed)
+
+            # Verifica tempo total mínimo
             elapsed = time.time() - start_time
-            print(f"[ROOTX] Elapsed: {elapsed:.1f}s")
+            print(f"[ROOTX] Elapsed: {elapsed:.1f}s / mínimo: {min_duration}s")
+
+            if elapsed < min_duration:
+                await asyncio.sleep(min_duration - elapsed)
+                elapsed = time.time() - start_time
+                print(f"[ROOTX] Final elapsed: {elapsed:.1f}s")
 
         except httpx.TimeoutException:
             findings.append(Finding(
