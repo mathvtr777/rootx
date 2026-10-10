@@ -14,6 +14,13 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+
+        /* Score Gauge */
+        .gauge-circle {
+            transition: stroke-dashoffset 1s ease-out;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen">
@@ -46,6 +53,31 @@
                 </div>
                 <h1 class="text-4xl font-bold mb-2">Relatório de Segurança</h1>
                 <p class="text-gray-400 mono text-sm" id="targetUrl">https://exemplo.com</p>
+            </div>
+
+            <!-- Score Gauge + Classification -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 mb-6 text-center">
+                <div class="flex flex-col md:flex-row items-center justify-center gap-8">
+                    <!-- Gauge -->
+                    <div class="relative w-48 h-48">
+                        <svg viewBox="0 0 200 200" class="w-full h-full">
+                            <circle cx="100" cy="100" r="85" fill="none" stroke="#1f1f1f" stroke-width="14"/>
+                            <circle id="gaugeArc" cx="100" cy="100" r="85" fill="none" stroke="#ef4444" stroke-width="14" stroke-linecap="round"
+                                stroke-dasharray="534" stroke-dashoffset="534" class="gauge-circle"/>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <div class="text-5xl font-bold mono" id="scoreValue">--</div>
+                            <div class="text-xs text-gray-500 mt-1">de 100</div>
+                        </div>
+                    </div>
+
+                    <!-- Classification -->
+                    <div class="text-left">
+                        <div class="text-xs text-gray-500 mb-1">CLASSIFICAÇÃO</div>
+                        <div class="text-3xl font-bold mb-2" id="classification">--</div>
+                        <div class="text-sm text-gray-400" id="riskBadge">--</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Metrics Grid -->
@@ -109,6 +141,20 @@
                 </div>
             </div>
 
+            <!-- Technologies Detected -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6" id="techCard" style="display: none;">
+                <h2 class="text-lg font-bold mb-4">Tecnologias Detectadas</h2>
+                <div id="techList" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Security Headers -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+                <h2 class="text-lg font-bold mb-4">Security Headers</h2>
+                <div class="space-y-2" id="headersList">
+                    <p class="text-gray-500 text-center py-4">Carregando...</p>
+                </div>
+            </div>
+
             <!-- Findings List -->
             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
                 <h2 class="text-lg font-bold mb-4">Vulnerabilidades Detectadas</h2>
@@ -125,12 +171,12 @@
                     </svg>
                     Novo Scan
                 </a>
-                <button id="downloadBtn" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
+                <a id="downloadBtn" href="#" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
                     Baixar Relatório PDF
-                </button>
+                </a>
             </div>
 
             <!-- Footer Info -->
@@ -167,11 +213,20 @@
             info: 'INFO'
         };
 
+        const headerLabels = {
+            strict_transport_security: { name: 'HSTS', desc: 'Strict-Transport-Security' },
+            content_security_policy: { name: 'CSP', desc: 'Content-Security-Policy' },
+            x_frame_options: { name: 'X-Frame-Options', desc: 'Proteção contra clickjacking' },
+            x_content_type_options: { name: 'X-Content-Type-Options', desc: 'Previne MIME sniffing' },
+            x_xss_protection: { name: 'X-XSS-Protection', desc: 'Filtro XSS do browser' },
+            referrer_policy: { name: 'Referrer-Policy', desc: 'Controle de referrer' },
+            permissions_policy: { name: 'Permissions-Policy', desc: 'Permissões de features' }
+        };
+
         async function loadReport() {
             try {
                 const response = await fetch(`${API_BASE}/api/scan/${scanId}/report`);
                 if (!response.ok) {
-                    // Se ainda não está completo, tenta o endpoint de status
                     if (response.status === 400) {
                         const statusResp = await fetch(`${API_BASE}/api/scan/${scanId}`);
                         const status = await statusResp.json();
@@ -181,21 +236,7 @@
                 }
                 const data = await response.json();
 
-                // Endpoint /report retorna estrutura aninhada diferente
-                const findings = data.findings || [];
-                const summary = data.summary || {};
-                const severityCounts = summary.severity_counts || {};
-
-                renderReport({
-                    url: data.report_url,
-                    subdomains: 0,
-                    endpoints: 0,
-                    apis: 0,
-                    parameters: 0,
-                    findings: findings,
-                    duration_seconds: data.duration_seconds,
-                    created_at: data.summary?.timestamp
-                });
+                renderReport(data);
             } catch (err) {
                 document.getElementById('findingsList').innerHTML = `
                     <div class="text-center py-8">
@@ -206,34 +247,123 @@
             }
         }
 
+        function getScoreColor(score) {
+            if (score >= 70) return '#10b981'; // emerald
+            if (score >= 50) return '#eab308'; // yellow
+            if (score >= 25) return '#f97316'; // orange
+            return '#ef4444'; // red
+        }
+
+        function getRiskBadge(riskLevel) {
+            const map = {
+                high: { label: 'Risco Alto', color: 'bg-red-500/20 text-red-400 border-red-500/50' },
+                medium: { label: 'Risco Médio', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' },
+                low: { label: 'Risco Baixo', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' }
+            };
+            return map[riskLevel] || map.medium;
+        }
+
+        function animateGauge(score) {
+            const arc = document.getElementById('gaugeArc');
+            const circumference = 2 * Math.PI * 85; // ~534
+            const offset = circumference - (score / 100) * circumference;
+            const color = getScoreColor(score);
+
+            arc.style.stroke = color;
+            // Trigger animation after a tick
+            setTimeout(() => {
+                arc.style.strokeDashoffset = offset;
+            }, 100);
+        }
+
         function renderReport(data) {
             // Header
-            document.getElementById('targetUrl').textContent = data.url || '--';
+            document.getElementById('targetUrl').textContent = data.report_url || data.url || '--';
+
+            // Score & Classification
+            const score = data.score ?? 0;
+            const classification = data.classification || '--';
+            const riskLevel = data.summary?.risk_level || 'medium';
+            const sevCounts = data.summary?.severity_counts || {};
+            const findings = data.findings || [];
+
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('classification').textContent = classification;
+            document.getElementById('classification').style.color = getScoreColor(score);
+
+            const risk = getRiskBadge(riskLevel);
+            document.getElementById('riskBadge').innerHTML = `<span class="px-2 py-1 ${risk.color} text-xs font-bold rounded border mono">${risk.label}</span>`;
+
+            animateGauge(score);
 
             // Metrics
-            const findings = data.findings || [];
-            const sevCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-            findings.forEach(f => {
-                const sev = (f.severity || f.severity_level || 'info').toLowerCase();
-                if (sevCounts[sev] !== undefined) sevCounts[sev]++;
-            });
-
-            document.getElementById('mSubdomains').textContent = data.subdomains || 0;
-            document.getElementById('mEndpoints').textContent = data.endpoints || 0;
-            document.getElementById('mApis').textContent = data.apis || 0;
-            document.getElementById('mParameters').textContent = data.parameters || 0;
+            document.getElementById('mSubdomains').textContent = data.subdomains ?? 0;
+            document.getElementById('mEndpoints').textContent = data.endpoints ?? 0;
+            document.getElementById('mApis').textContent = data.apis ?? 0;
+            document.getElementById('mParameters').textContent = data.parameters ?? 0;
             document.getElementById('mFindings').textContent = findings.length;
 
-            // Severity bars
+            // Severity bars (use data.summary.severity_counts)
             const total = findings.length || 1;
-            document.getElementById('nCritical').textContent = sevCounts.critical;
-            document.getElementById('nHigh').textContent = sevCounts.high;
-            document.getElementById('nMedium').textContent = sevCounts.medium;
-            document.getElementById('nLow').textContent = sevCounts.low;
-            document.getElementById('barCritical').style.width = (sevCounts.critical / total * 100) + '%';
-            document.getElementById('barHigh').style.width = (sevCounts.high / total * 100) + '%';
-            document.getElementById('barMedium').style.width = (sevCounts.medium / total * 100) + '%';
-            document.getElementById('barLow').style.width = (sevCounts.low / total * 100) + '%';
+            const counts = {
+                critical: sevCounts.critical || 0,
+                high: sevCounts.high || 0,
+                medium: sevCounts.medium || 0,
+                low: sevCounts.low || 0
+            };
+            document.getElementById('nCritical').textContent = counts.critical;
+            document.getElementById('nHigh').textContent = counts.high;
+            document.getElementById('nMedium').textContent = counts.medium;
+            document.getElementById('nLow').textContent = counts.low;
+            document.getElementById('barCritical').style.width = (counts.critical / total * 100) + '%';
+            document.getElementById('barHigh').style.width = (counts.high / total * 100) + '%';
+            document.getElementById('barMedium').style.width = (counts.medium / total * 100) + '%';
+            document.getElementById('barLow').style.width = (counts.low / total * 100) + '%';
+
+            // Technologies
+            const technologies = data.technologies || [];
+            if (technologies.length > 0) {
+                document.getElementById('techCard').style.display = 'block';
+                document.getElementById('techList').innerHTML = technologies.map(t => {
+                    const version = t.version ? ` <span class="text-gray-500 mono">${t.version}</span>` : '';
+                    return `<span class="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm">${t.name}${version}</span>`;
+                }).join('');
+            }
+
+            // Security Headers
+            const headers = data.security_headers || {};
+            const headersContainer = document.getElementById('headersList');
+            const headerKeys = Object.keys(headerLabels);
+            const present = headerKeys.filter(k => headers[k] === true).length;
+            const totalHeaders = headerKeys.length;
+            const headerPercent = Math.round((present / totalHeaders) * 100);
+
+            const headerColor = headerPercent >= 80 ? 'text-emerald-400' : headerPercent >= 50 ? 'text-yellow-400' : 'text-red-400';
+            const headerBgColor = headerPercent >= 80 ? 'bg-emerald-500/10 border-emerald-500/30' : headerPercent >= 50 ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-red-500/10 border-red-500/30';
+
+            headersContainer.innerHTML = `
+                <div class="mb-4 p-3 ${headerBgColor} border rounded-lg flex items-center justify-between">
+                    <span class="text-sm">Headers implementados</span>
+                    <span class="font-bold mono ${headerColor}">${present}/${totalHeaders}</span>
+                </div>
+                ${headerKeys.map(key => {
+                    const label = headerLabels[key];
+                    const isPresent = headers[key] === true;
+                    return `
+                        <div class="flex items-center justify-between py-2 px-3 ${isPresent ? 'bg-emerald-500/5' : 'bg-red-500/5'} rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="w-6 h-6 rounded-full ${isPresent ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'} flex items-center justify-center text-xs font-bold">
+                                    ${isPresent ? '✓' : '✗'}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-sm">${label.name}</div>
+                                    <div class="text-xs text-gray-500">${label.desc}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
 
             // Findings list
             const list = document.getElementById('findingsList');
@@ -266,8 +396,8 @@
             }
 
             // Footer
-            if (data.created_at) {
-                const date = new Date(data.created_at);
+            if (data.summary?.timestamp) {
+                const date = new Date(data.summary.timestamp);
                 document.getElementById('generatedAt').textContent = date.toLocaleString('pt-BR');
             }
             if (data.duration_seconds) {
@@ -276,11 +406,10 @@
                 const s = sec % 60;
                 document.getElementById('duration').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
             }
-        }
 
-        document.getElementById('downloadBtn').addEventListener('click', () => {
-            window.print();
-        });
+            // PDF download link
+            document.getElementById('downloadBtn').href = `${API_BASE}/api/scan/${scanId}/pdf`;
+        }
 
         loadReport();
     </script>

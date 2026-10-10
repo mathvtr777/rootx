@@ -9,22 +9,45 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from .models import ScanRequest, ScanResponse, ScanStatus, ScanResult, Finding
 from .database import init_db, create_scan, update_scan_status, save_scan_results, get_scan, get_all_scans
 from .scanner import SecurityScanner
+from .pdf_generator import generate_pdf
 
 # Configuração
 BASE_DIR = Path(__file__).parent.parent
+
+# Rate limiter: 5 scans por IP por hora
+limiter = Limiter(key_func=get_remote_address, default_limits=["5/hour"])
 
 app = FastAPI(
     title="ROOTX API",
     description="Scanner de Segurança Web",
     version="1.0.0"
 )
+
+# Rate limiter state
+app.state.limiter = limiter
+
+
+# Rate limit handler amigável (retorna JSON em vez de texto puro)
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": "Limite de scans atingido. Você pode fazer no máximo 5 scans por hora. Aguarde e tente novamente.",
+            "limit": str(exc.detail),
+        }
+    )
 
 # CORS
 app.add_middleware(
@@ -49,13 +72,14 @@ async def health():
 
 
 @app.post("/api/scan")
-async def create_scan_endpoint(request: ScanRequest):
-    """Inicia um novo scan de segurança"""
+@limiter.limit("5/hour")
+async def create_scan_endpoint(request: Request, scan_request: ScanRequest):
+    """Inicia um novo scan de segurança (limitado a 5/hora por IP)"""
     scan_id = str(uuid.uuid4())[:8]
-    await create_scan(scan_id, str(request.url), request.scan_type.value)
+    await create_scan(scan_id, str(scan_request.url), scan_request.scan_type.value)
 
     time_map = {"quick": 30, "full": 180, "aggressive": 600}
-    estimated_time = time_map.get(request.scan_type.value, 60)
+    estimated_time = time_map.get(scan_request.scan_type.value, 60)
 
     return {
         "scan_id": scan_id,
@@ -182,6 +206,51 @@ async def get_scan_report(scan_id: str):
         "findings": findings,
         "recommendations": []
     }
+
+
+@app.get("/api/scan/{scan_id}/pdf")
+async def get_scan_pdf(scan_id: str):
+    """Gera e retorna o PDF do relatório"""
+    scan = await get_scan(scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan não encontrado")
+
+    if scan["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scan ainda não completo. Status: {scan['status']}"
+        )
+
+    findings = json.loads(scan["findings_json"]) if scan["findings_json"] else []
+    technologies = json.loads(scan["technologies_json"]) if scan["technologies_json"] else []
+    security_headers = json.loads(scan["security_headers_json"]) if scan["security_headers_json"] else {}
+    summary = json.loads(scan["summary_json"]) if scan["summary_json"] else {}
+
+    scan_data = {
+        "scan_id": scan_id,
+        "url": scan["url"],
+        "score": scan["score"],
+        "classification": summary.get("classification"),
+        "duration_seconds": scan["duration_seconds"] or 0,
+        "summary": summary,
+        "technologies": technologies,
+        "security_headers": security_headers,
+        "findings": findings,
+    }
+
+    try:
+        pdf_bytes = generate_pdf(scan_data)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {str(e)}")
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="nightfall-{scan_id}.pdf"'
+        }
+    )
 
 
 @app.get("/api/scans")
