@@ -73,14 +73,32 @@ async def get_scan_status(scan_id: str):
         raise HTTPException(status_code=404, detail="Scan não encontrado")
 
     status = scan["status"]
-    progress = 0 if status == "pending" else (50 if status == "running" else 100)
+
+    # Calcula progresso baseado em tempo decorrido vs tempo estimado
+    progress = 0
+    estimated_time_map = {"quick": 30, "full": 180, "aggressive": 600}
+    estimated_time = estimated_time_map.get(scan["scan_type"], 60)
+
+    if status == "pending":
+        progress = 0
+    elif status == "running":
+        # Calcula % baseado no tempo decorrido desde started_at
+        from datetime import datetime as dt
+        started = dt.fromisoformat(scan["started_at"])
+        elapsed = (dt.utcnow() - started).total_seconds()
+        progress = min(95, int((elapsed / estimated_time) * 100))
+    elif status == "completed":
+        progress = 100
+    elif status == "failed":
+        progress = 0
 
     return {
         "scan_id": scan_id,
         "status": status,
         "url": scan["url"],
         "progress": progress,
-        "started_at": scan["started_at"]
+        "started_at": scan["started_at"],
+        "estimated_time_seconds": estimated_time
     }
 
 

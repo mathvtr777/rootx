@@ -151,7 +151,11 @@
                         <div class="absolute inset-0 border-4 border-red-500 border-t-transparent rounded-full spinner"></div>
                     </div>
                     <h2 class="text-2xl font-bold mb-2" id="statusTitle">Escaneando...</h2>
-                    <p class="text-gray-400 mb-6" id="statusMessage">Analisando https://exemplo.com</p>
+                    <p class="text-gray-400 mb-2" id="statusMessage">Analisando https://exemplo.com</p>
+                    <p class="text-xs text-gray-500 mb-6">
+                        Tempo estimado: <span id="estimatedTime" class="mono text-red-400">--</span> |
+                        Decorrido: <span id="elapsedTime" class="mono text-gray-300">0s</span>
+                    </p>
 
                     <!-- Progress -->
                     <div class="max-w-sm mx-auto">
@@ -227,6 +231,25 @@
 
         let currentScanId = null;
         let pollInterval = null;
+        let startTime = null;
+        let estimatedTime = 60;
+        let elapsedTimer = null;
+
+        function formatTime(seconds) {
+            if (seconds < 60) return `${Math.round(seconds)}s`;
+            const m = Math.floor(seconds / 60);
+            const s = Math.round(seconds % 60);
+            return `${m}m ${s}s`;
+        }
+
+        function startElapsedTimer() {
+            startTime = Date.now();
+            if (elapsedTimer) clearInterval(elapsedTimer);
+            elapsedTimer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('elapsedTime').textContent = formatTime(elapsed);
+            }, 500);
+        }
 
         scanForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -263,6 +286,11 @@
 
                 const data = await response.json();
                 currentScanId = data.scan_id;
+                estimatedTime = data.estimated_time_seconds || 60;
+                document.getElementById('estimatedTime').textContent = formatTime(estimatedTime);
+
+                // Start elapsed timer
+                startElapsedTimer();
 
                 // Start polling
                 runScan(currentScanId);
@@ -287,38 +315,63 @@
                 const response = await fetch(`${API_BASE}/api/scan/${scanId}`);
                 const data = await response.json();
 
-                updateProgress(data.progress || 0);
-                updateSteps(data.progress || 0);
+                const progress = data.progress || 0;
+                updateProgress(progress);
+                updateSteps(progress);
 
-                // Verifica se o scan terminou (status completed + progress 100)
-                if (data.status === 'completed' || data.progress === 100) {
+                if (data.status === 'completed' || progress >= 100) {
                     clearInterval(pollInterval);
-                    window.location.href = `/report/${scanId}`;
+                    if (elapsedTimer) clearInterval(elapsedTimer);
+                    document.getElementById('statusTitle').textContent = 'Concluído!';
+                    document.getElementById('progressPercent').textContent = '100%';
+                    setTimeout(() => {
+                        window.location.href = `/report/${scanId}`;
+                    }, 800);
                 } else if (data.status === 'failed') {
                     clearInterval(pollInterval);
+                    if (elapsedTimer) clearInterval(elapsedTimer);
                     showError('O scan falhou. Tente novamente.');
                     scanForm.classList.remove('hidden');
                     statusSection.classList.add('hidden');
                 }
 
             } catch (err) {
-                clearInterval(pollInterval);
-                showError('Erro ao verificar status do scan');
+                console.error('Polling error:', err);
             }
         }
 
         function updateProgress(progress) {
             progressBar.style.width = `${progress}%`;
             progressPercent.textContent = `${progress}%`;
+
+            // Atualiza o título baseado no progresso
+            if (progress < 25) {
+                statusTitle.textContent = 'Conectando...';
+            } else if (progress < 50) {
+                statusTitle.textContent = 'Analisando headers...';
+            } else if (progress < 75) {
+                statusTitle.textContent = 'Detectando tecnologias...';
+            } else if (progress < 95) {
+                statusTitle.textContent = 'Procurando vulnerabilidades...';
+            } else {
+                statusTitle.textContent = 'Finalizando...';
+            }
         }
 
         function updateSteps(progress) {
-            const steps = ['step1', 'step2', 'step3', 'step4'];
-            const completedCount = Math.floor(progress / 25);
+            const steps = [
+                { id: 'step1', label: 'Conectando ao site', threshold: 0 },
+                { id: 'step2', label: 'Analisando headers', threshold: 25 },
+                { id: 'step3', label: 'Detectando tecnologias', threshold: 50 },
+                { id: 'step4', label: 'Procurando vulnerabilidades', threshold: 75 }
+            ];
 
-            steps.forEach((stepId, index) => {
-                const step = document.getElementById(stepId);
-                if (index < completedCount) {
+            steps.forEach((stepInfo, index) => {
+                const step = document.getElementById(stepInfo.id);
+                const nextThreshold = index < steps.length - 1 ? steps[index + 1].threshold : 100;
+
+                if (progress >= nextThreshold) {
+                    // Completo
                     step.className = 'flex items-center gap-3 text-red-400';
                     step.innerHTML = `
                         <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
@@ -326,13 +379,23 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
                         </div>
-                        <span>${step.querySelector('span:last-child').textContent}</span>
+                        <span>${stepInfo.label}</span>
                     `;
-                } else if (index === completedCount) {
+                } else if (progress >= stepInfo.threshold) {
+                    // Ativo
                     step.className = 'flex items-center gap-3 text-red-400';
                     step.innerHTML = `
                         <div class="w-6 h-6 rounded-full border-2 border-red-500 animate-pulse"></div>
-                        <span>${step.querySelector('span:last-child').textContent}</span>
+                        <span>${stepInfo.label}</span>
+                    `;
+                } else {
+                    // Pendente
+                    step.className = 'flex items-center gap-3 text-gray-500';
+                    step.innerHTML = `
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-700 flex items-center justify-center">
+                            <span class="text-xs">${index + 1}</span>
+                        </div>
+                        <span>${stepInfo.label}</span>
                     `;
                 }
             });
@@ -341,6 +404,7 @@
         function showError(message) {
             errorSection.classList.remove('hidden');
             errorMessage.textContent = message;
+            if (elapsedTimer) clearInterval(elapsedTimer);
         }
     </script>
 </body>
